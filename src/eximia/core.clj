@@ -1,5 +1,5 @@
 (ns eximia.core
-  (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamConstants XMLStreamException]
+  (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamConstants]
            [java.io Reader InputStream StringReader]
            [javax.xml.transform Source]))
 
@@ -37,13 +37,6 @@
 (defrecord Element [tag attrs content])
 
 (defn- parse-tokens [^XMLStreamReader input]
-
-  ;;; * NAMESPACE and ATTRIBUTE are subservient to START_ELEMENT and don't appear in XMLStreamReaders
-  ;;; * START_DOCUMENT, SPACE, COMMENT, DTD, NOTATION_DECLARATION, ENTITY_DECLARATION and PROCESSING_INSTRUCTION
-  ;;;   are skipped
-  ;;; * Sequences of CDATA, CHARACTERS and ENTITY_REFERENCE strings are concatenated
-  ;;; * END_DOCUMENT is only checked for in `parse` (TODO: and redundantly even there?)
-
   (letfn [(skip-prolog [^XMLStreamReader input]
             (.next input)                                   ; START_DOCUMENT
             (loop []
@@ -96,6 +89,7 @@
                 XMLStreamConstants/END_ELEMENT (do (.next input)
                                                    (persistent! elems)))))
 
+          ;; FIXME: Skip "insignificant" whitespace, like clojure.xml:
           (parse-chars [^XMLStreamReader input]
             (let [sb (StringBuilder.)]
               (loop []
@@ -128,9 +122,7 @@
 (defn parse
   ([input] (parse input default-factory))
   ([input xml-input-factory]
-   (let [input (-stream-reader input xml-input-factory)]
-     (try
-       (let [v (parse-tokens input)]
-         (assert (not (.hasNext input)))
-         v)
-       (finally (.close input))))))
+   (with-open [input (-stream-reader input xml-input-factory)]
+     (let [v (parse-tokens input)]
+       (assert (not (.hasNext input)))
+       v))))
