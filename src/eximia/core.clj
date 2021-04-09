@@ -101,8 +101,6 @@
     (eval-case (.next input)                                ; also skips START_DOCUMENT
       XMLStreamConstants/START_ELEMENT (parse-element input)
 
-      (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA XMLStreamConstants/ENTITY_REFERENCE) (parse-chars input)
-
       (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
        XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
        XMLStreamConstants/PROCESSING_INSTRUCTION)
