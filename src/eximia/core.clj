@@ -114,7 +114,7 @@
 
 (def ^:private ^XMLInputFactory default-factory
   (doto (XMLInputFactory/newFactory)
-    (.setProperty "javax.xml.stream.isSupportingExternalEntities" false)))
+    (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false)))
 
 (defn parse
   ([input] (parse input default-factory))
