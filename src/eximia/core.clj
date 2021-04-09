@@ -1,7 +1,6 @@
 (ns eximia.core
   (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamConstants]
-           [java.io Reader InputStream StringReader]
-           [javax.xml.transform Source]))
+           [java.io Reader InputStream StringReader]))
 
 ;;;; # Input Conversions
 
@@ -13,9 +12,6 @@
   (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
 
   InputStream
-  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
-
-  Source
   (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
 
   String
