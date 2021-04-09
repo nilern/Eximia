@@ -1,5 +1,5 @@
 (ns eximia.core
-  (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamConstants]
+  (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamConstants XMLStreamException]
            [java.io Reader InputStream StringReader]
            [javax.xml.transform Source]))
 
@@ -111,5 +111,11 @@
   ([input] (parse input default-factory))
   ([input xml-input-factory]
    (let [input (-stream-reader input xml-input-factory)]
-     (.next input)                                          ; discard START_DOCUMENT
-     (parse-tokens input))))
+     (try
+       (.next input)                                        ; discard START_DOCUMENT
+       (let [v (parse-tokens input)]
+         (if (identical? (.getEventType input) XMLStreamConstants/END_DOCUMENT)
+           v
+           (throw (XMLStreamException. (str "Expected END_DOCUMENT, got " (.getEventType input))
+                                       (.getLocation input)))))
+       (finally (.close input))))))
