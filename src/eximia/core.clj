@@ -111,6 +111,7 @@
     (skip-prolog input)
     (let [v (parse-element input)]
       (skip-epilog input)
+      (assert (not (.hasNext input)))
       v)))
 
 ;;;; # API
@@ -123,6 +124,4 @@
   ([input] (parse input default-factory))
   ([input xml-input-factory]
    (with-open [input (-stream-reader input xml-input-factory)]
-     (let [v (parse-tokens input)]
-       (assert (not (.hasNext input)))
-       v))))
+     (parse-tokens input))))
