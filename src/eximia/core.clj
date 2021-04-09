@@ -44,7 +44,27 @@
   ;;; * Sequences of CDATA, CHARACTERS and ENTITY_REFERENCE strings are concatenated
   ;;; * END_DOCUMENT is only checked for in `parse` (TODO: and redundantly even there?)
 
-  (letfn [(parse-element [^XMLStreamReader input]
+  (letfn [(skip-prolog [^XMLStreamReader input]
+            (.next input)                                   ; START_DOCUMENT
+            (loop []
+              (eval-case (.getEventType input)
+                (XMLStreamConstants/DTD
+                 XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
+                (do (.next input)
+                    (recur))
+
+                nil)))
+
+          (skip-epilog [^XMLStreamReader input]
+            (loop []
+              (eval-case (.getEventType input)
+                (XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
+                (do (.next input)
+                    (recur))
+
+                XMLStreamConstants/END_DOCUMENT nil)))
+
+          (parse-element [^XMLStreamReader input]
             (let [tag (keyword (.getLocalName input))
                   attrs (parse-attrs input)
                   content (parse-contents input)]
@@ -69,9 +89,7 @@
                 (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA XMLStreamConstants/ENTITY_REFERENCE)
                 (recur (conj! elems (parse-chars input)))
 
-                (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
-                 XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
-                 XMLStreamConstants/PROCESSING_INSTRUCTION)
+                (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT XMLStreamConstants/PROCESSING_INSTRUCTION)
                 (do (.next input)
                     (recur elems))
 
@@ -90,22 +108,16 @@
                   XMLStreamConstants/ENTITY_REFERENCE (do (.append sb (.getText input))
                                                           (recur))
 
-                  (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
-                   XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
-                   XMLStreamConstants/PROCESSING_INSTRUCTION)
+                  (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT XMLStreamConstants/PROCESSING_INSTRUCTION)
                   (do (.next input)
                       (recur))
 
                   (.toString sb)))))]
 
-    (eval-case (.next input)                                ; also skips START_DOCUMENT
-      XMLStreamConstants/START_ELEMENT (parse-element input)
-
-      (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
-       XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
-       XMLStreamConstants/PROCESSING_INSTRUCTION)
-      (do (.next input)
-          (recur input)))))
+    (skip-prolog input)
+    (let [v (parse-element input)]
+      (skip-epilog input)
+      v)))
 
 ;;;; # API
 
@@ -119,8 +131,6 @@
    (let [input (-stream-reader input xml-input-factory)]
      (try
        (let [v (parse-tokens input)]
-         (if (identical? (.getEventType input) XMLStreamConstants/END_DOCUMENT)
-           v
-           (throw (XMLStreamException. (str "Expected END_DOCUMENT, got " (.getEventType input))
-                                       (.getLocation input)))))
+         (assert (not (.hasNext input)))
+         v)
        (finally (.close input))))))
