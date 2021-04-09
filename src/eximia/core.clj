@@ -36,7 +36,14 @@
 
 (defrecord Element [tag attrs content])
 
-(def ^:private parse-tokens
+(defn- parse-tokens [^XMLStreamReader input]
+
+  ;;; * NAMESPACE and ATTRIBUTE are subservient to START_ELEMENT and don't appear in XMLStreamReaders
+  ;;; * START_DOCUMENT, SPACE, COMMENT, DTD, NOTATION_DECLARATION, ENTITY_DECLARATION and PROCESSING_INSTRUCTION
+  ;;;   are skipped
+  ;;; * Sequences of CDATA, CHARACTERS and ENTITY_REFERENCE strings are concatenated
+  ;;; * END_DOCUMENT is only checked for in `parse` (TODO: and redundantly even there?)
+
   (letfn [(parse-element [^XMLStreamReader input]
             (let [tag (keyword (.getLocalName input))
                   attrs (parse-attrs input)
@@ -59,47 +66,48 @@
               (eval-case (.getEventType input)
                 XMLStreamConstants/START_ELEMENT (recur (conj! elems (parse-element input)))
 
-                (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA) (if-not (.isWhiteSpace input)
-                                                                           (recur (conj! elems (parse-chars input)))
-                                                                           (do (.next input)
-                                                                               (recur elems)))
+                (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA XMLStreamConstants/ENTITY_REFERENCE)
+                (recur (conj! elems (parse-chars input)))
 
-                (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT) (do (.next input)
-                                                                          (recur elems))
+                (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
+                 XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
+                 XMLStreamConstants/PROCESSING_INSTRUCTION)
+                (do (.next input)
+                    (recur elems))
 
                 XMLStreamConstants/END_ELEMENT (do (.next input)
                                                    (persistent! elems)))))
 
           (parse-chars [^XMLStreamReader input]
             (let [sb (StringBuilder.)]
-              (.append sb (.getTextCharacters input) (.getTextStart input) (.getTextLength input))
-              (.next input)
-
               (loop []
                 (eval-case (.getEventType input)
                   (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA)
-                  (if-not (.isWhiteSpace input)
-                    (.append sb (.getTextCharacters input) (.getTextStart input) (.getTextLength input))
-                    (do (.next input)
-                        (recur)))
+                  (do (.append sb (.getTextCharacters input) (.getTextStart input) (.getTextLength input))
+                      (.next input)
+                      (recur))
 
-                  (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT) (do (.next input)
-                                                                            (recur))
+                  XMLStreamConstants/ENTITY_REFERENCE (do (.append sb (.getText input))
+                                                          (recur))
 
-                  (.toString sb)))))
+                  (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
+                   XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
+                   XMLStreamConstants/PROCESSING_INSTRUCTION)
+                  (do (.next input)
+                      (recur))
 
-          (parse-any [^XMLStreamReader input]
-            (eval-case (.getEventType input)
-              XMLStreamConstants/START_ELEMENT (parse-element input)
+                  (.toString sb)))))]
 
-              (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA) (if-not (.isWhiteSpace input)
-                                                                         (parse-chars input)
-                                                                         (do (.next input)
-                                                                             (recur input)))
+    (eval-case (.next input)                                ; also skips START_DOCUMENT
+      XMLStreamConstants/START_ELEMENT (parse-element input)
 
-              (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT) (do (.next input)
-                                                                        (recur input))))]
-    parse-any))
+      (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA XMLStreamConstants/ENTITY_REFERENCE) (parse-chars input)
+
+      (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT
+       XMLStreamConstants/DTD XMLStreamConstants/NOTATION_DECLARATION XMLStreamConstants/ENTITY_DECLARATION
+       XMLStreamConstants/PROCESSING_INSTRUCTION)
+      (do (.next input)
+          (recur input)))))
 
 ;;;; # API
 
@@ -112,7 +120,6 @@
   ([input xml-input-factory]
    (let [input (-stream-reader input xml-input-factory)]
      (try
-       (.next input)                                        ; discard START_DOCUMENT
        (let [v (parse-tokens input)]
          (if (identical? (.getEventType input) XMLStreamConstants/END_DOCUMENT)
            v
