@@ -73,33 +73,16 @@
                 XMLStreamConstants/START_ELEMENT (recur (conj! elems (parse-element input)))
 
                 (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA XMLStreamConstants/ENTITY_REFERENCE)
-                (recur (conj! elems (parse-chars input)))
+                (let [s (.getText input)]
+                  (.next input)
+                  (recur (conj! elems s)))
 
                 (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT XMLStreamConstants/PROCESSING_INSTRUCTION)
                 (do (.next input)
                     (recur elems))
 
                 XMLStreamConstants/END_ELEMENT (do (.next input)
-                                                   (persistent! elems)))))
-
-          ;; FIXME: Skip "insignificant" whitespace, like clojure.xml:
-          (parse-chars [^XMLStreamReader input]
-            (let [sb (StringBuilder.)]
-              (loop []
-                (eval-case (.getEventType input)
-                  (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA)
-                  (do (.append sb (.getTextCharacters input) (.getTextStart input) (.getTextLength input))
-                      (.next input)
-                      (recur))
-
-                  XMLStreamConstants/ENTITY_REFERENCE (do (.append sb (.getText input))
-                                                          (recur))
-
-                  (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT XMLStreamConstants/PROCESSING_INSTRUCTION)
-                  (do (.next input)
-                      (recur))
-
-                  (.toString sb)))))]
+                                                   (persistent! elems)))))]
 
     (skip-prolog input)
     (let [v (parse-element input)]
@@ -111,7 +94,8 @@
 
 (def ^:private ^XMLInputFactory default-factory
   (doto (XMLInputFactory/newFactory)
-    (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false)))
+    (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false)
+    (.setProperty XMLInputFactory/IS_COALESCING true)))
 
 (defn parse
   ([input] (parse input default-factory))
