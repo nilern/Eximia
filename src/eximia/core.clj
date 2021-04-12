@@ -1,5 +1,5 @@
 (ns eximia.core
-  (:refer-clojure :exclude [read])
+  (:refer-clojure :exclude [comment read])
   (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamWriter XMLStreamConstants XMLOutputFactory]
            [java.io Reader Writer InputStream OutputStream StringReader StringWriter]
            [javax.xml.namespace QName]))
@@ -54,6 +54,18 @@
                  out attrs)
       (reduce (fn [out child] (-write child out) out) out content)
       (.writeEndElement out))))
+
+(defrecord CData [chars]
+  WriteXML
+  (-write [_ out] (.writeCData ^XMLStreamWriter out chars)))
+
+(def cdata ->CData)
+
+(defrecord Comment [chars]
+  WriteXML
+  (-write [_ out] (.writeComment ^XMLStreamWriter out chars)))
+
+(def comment ->Comment)
 
 (extend-type String
   WriteXML
