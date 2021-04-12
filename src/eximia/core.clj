@@ -64,6 +64,17 @@
 
 (def comment ->Comment)
 
+(defrecord ProcessingInstruction [target data]
+  WriteXML
+  (-write [_ out]
+    (if data
+      (.writeProcessingInstruction ^XMLStreamWriter out target data)
+      (.writeProcessingInstruction ^XMLStreamWriter out target))))
+
+(defn processing-instruction
+  ([target] (processing-instruction target nil))
+  ([target data] (ProcessingInstruction. target data)))
+
 (extend-type String
   WriteXML
   (-write [s out] (.writeCharacters ^XMLStreamWriter out s)))
@@ -146,10 +157,12 @@
 
 ;;;; # API
 
-(def ^:private ^XMLInputFactory default-input-factory
+(defn input-factory []
   (doto (XMLInputFactory/newFactory)
     (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false)
     (.setProperty XMLInputFactory/IS_COALESCING true)))
+
+(def ^:private ^XMLInputFactory default-input-factory (input-factory))
 
 (defn read
   ([input] (read input default-input-factory))
@@ -163,9 +176,11 @@
    (with-open [input (StringReader. input)]
      (read input xml-input-factory))))
 
-(def ^:private ^XMLOutputFactory default-output-factory
+(defn output-factory []
   (doto (XMLOutputFactory/newFactory)
     (.setProperty XMLOutputFactory/IS_REPAIRING_NAMESPACES true)))
+
+(def ^:private ^XMLOutputFactory default-output-factory (output-factory))
 
 (defn write
   ([tree out] (write tree out default-output-factory))
