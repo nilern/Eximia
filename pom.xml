@@ -12,6 +12,11 @@
       <artifactId>clojure</artifactId>
       <version>1.10.3</version>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.woodstox</groupId>
+      <artifactId>woodstox-core</artifactId>
+      <version>6.2.5</version>
+    </dependency>
   </dependencies>
   <build>
     <sourceDirectory>src</sourceDirectory>
