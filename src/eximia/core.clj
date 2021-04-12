@@ -33,10 +33,7 @@
   (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
 
   InputStream
-  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
-
-  String
-  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory (StringReader. self))))
+  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self)))
 
 ;;;; # Writing
 
@@ -160,6 +157,12 @@
    (with-open [input (-stream-reader input xml-input-factory)]
      (parse-tokens input))))
 
+(defn read-str
+  ([input] (read-str input default-input-factory))
+  ([input xml-input-factory]
+   (with-open [input (StringReader. input)]
+     (read input xml-input-factory))))
+
 (def ^:private ^XMLOutputFactory default-output-factory
   (doto (XMLOutputFactory/newFactory)
     (.setProperty XMLOutputFactory/IS_REPAIRING_NAMESPACES true)))
@@ -173,7 +176,6 @@
 (defn write-str
   ([tree] (write-str tree default-output-factory))
   ([tree xml-output-factory]
-   (with-open [sout (StringWriter.)
-               out (-stream-writer sout xml-output-factory)]
-     (write-document tree out)
-     (.toString sout))))
+   (with-open [out (StringWriter.)]
+     (write tree out xml-output-factory)
+     (.toString out))))
