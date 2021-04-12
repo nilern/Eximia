@@ -54,7 +54,7 @@
                 XMLStreamConstants/END_DOCUMENT nil)))
 
           (parse-element [^XMLStreamReader input]
-            (let [tag (keyword (.getLocalName input))
+            (let [tag (.getName input)
                   attrs (parse-attrs input)
                   content (parse-contents input)]
               (Element. tag attrs content)))
@@ -63,10 +63,7 @@
             (let [attr-count (.getAttributeCount input)]
               (loop [i 0, attrs (transient {})]
                 (if (< i attr-count)
-                  (recur (inc i)
-                         (assoc! attrs
-                                 (keyword (.getAttributeNamespace input i) (.getAttributeLocalName input i))
-                                 (.getAttributeValue input i)))
+                  (recur (inc i) (assoc! attrs (.getAttributeName input i) (.getAttributeValue input i)))
                   (do (.next input)
                       (persistent! attrs))))))
 
