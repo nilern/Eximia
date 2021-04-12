@@ -1,6 +1,14 @@
 (ns eximia.core
   (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamConstants]
-           [java.io Reader InputStream StringReader]))
+           [java.io Reader Writer InputStream StringReader]
+           [javax.xml.namespace QName]))
+
+;;;; # QName Support
+
+(defmethod print-method QName [^QName qname ^Writer out]
+  (.write out "#qname[")
+  (.write out (.toString qname))
+  (.write out (int \])))
 
 ;;;; # Input Conversions
 
