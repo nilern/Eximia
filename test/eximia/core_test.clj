@@ -21,7 +21,7 @@
 (def pi-gen
   (gen/let [target gen/string
             data (gen/one-of [gen/string (gen/return nil)])]
-    e/processing-instruction ))
+    (e/processing-instruction target data)))
 
 (def name-gen
   (gen/let [c gen/char-alpha
