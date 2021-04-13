@@ -8,7 +8,9 @@
 
 ;;;; # Generators
 
-(def content-char-gen (gen/such-that (fn [^Character c] (< (.indexOf "<&" (int c)) 0)) gen/char))
+(def content-char-gen
+  (gen/such-that (fn [^Character c] (< (.indexOf "<&" (int c)) 0))
+                 gen/char-ascii))
 
 (def characters-gen (gen/fmap str/join (gen/vector content-char-gen)))
 
@@ -21,8 +23,10 @@
             data (gen/one-of [gen/string (gen/return nil)])]
     e/processing-instruction ))
 
-;; HACK:
-(def name-gen (gen/fmap name gen/symbol))
+(def name-gen
+  (gen/let [c gen/char-alpha
+            cs gen/string-alphanumeric]
+    (str c cs)))
 
 (def qname-gen
   (gen/let [local-name name-gen

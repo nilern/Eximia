@@ -47,7 +47,8 @@
 
 (defn- write-attrs [out attrs]
   (reduce-kv (fn [^XMLStreamWriter out ^QName k v]
-               (.writeAttribute out (.getPrefix k) (.getLocalPart k) (.getNamespaceURI k) v))
+               (.writeAttribute out (.getPrefix k) (.getLocalPart k) (.getNamespaceURI k) v)
+               out)
              out attrs))
 
 (defn- write-content [out content] (reduce (fn [out child] (-write child out) out) out content))
