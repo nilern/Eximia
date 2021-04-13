@@ -11,6 +11,11 @@
   (.write out (.toString qname))
   (.write out (int \])))
 
+(defn qname
+  ([local-name] (QName. local-name))
+  ([namespace-uri local-name] (QName. namespace-uri local-name))
+  ([namespace-uri local-name prefix] (QName. namespace-uri local-name prefix)))
+
 ;;;; # Output Conversions
 
 (defprotocol ^:private ToStreamWriter
@@ -60,6 +65,8 @@
         (do (.writeEmptyElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
             (write-attrs out attrs)
             (write-content out content))))))
+
+(def element ->Element)
 
 (defrecord CData [chars]
   WriteXML
