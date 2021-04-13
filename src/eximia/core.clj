@@ -40,17 +40,26 @@
 (defprotocol WriteXML
   (-write [self ^XMLStreamWriter out]))
 
+(defn- write-attrs [out attrs]
+  (reduce-kv (fn [^XMLStreamWriter out ^QName k v]
+               (.writeAttribute out (.getPrefix k) (.getLocalPart k) (.getNamespaceURI k) v))
+             out attrs))
+
+(defn- write-content [out content] (reduce (fn [out child] (-write child out) out) out content))
+
 (defrecord Element [tag attrs content]
   WriteXML
   (-write [_ out]
     (let [^XMLStreamWriter out out
           ^QName tag tag]
-      (.writeStartElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
-      (reduce-kv (fn [^XMLStreamWriter out ^QName k v]
-                   (.writeAttribute out (.getPrefix k) (.getLocalPart k) (.getNamespaceURI k) v))
-                 out attrs)
-      (reduce (fn [out child] (-write child out) out) out content)
-      (.writeEndElement out))))
+      (if (seq content)
+        (do (.writeStartElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
+            (write-attrs out attrs)
+            (write-content out content)
+            (.writeEndElement out))
+        (do (.writeEmptyElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
+            (write-attrs out attrs)
+            (write-content out content))))))
 
 (defrecord CData [chars]
   WriteXML
@@ -103,7 +112,7 @@
             (loop []
               (eval-case (.getEventType input)
                 (XMLStreamConstants/DTD
-                 XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
+                  XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
                 (do (.next input)
                     (recur))
 
