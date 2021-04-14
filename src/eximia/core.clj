@@ -215,7 +215,7 @@
         (assert (not (.hasNext input)))
         v))))
 
-;;;; # API
+;;;; # Reading
 
 (defn input-factory ^XMLInputFactory [opts]
   (reduce-kv (fn [^XMLInputFactory factory k v]
@@ -253,6 +253,8 @@
   ([input opts xml-input-factory]
    (with-open [input (StringReader. input)]
      (read input opts xml-input-factory))))
+
+;;;; # Writing
 
 (defn output-factory ^XMLOutputFactory [opts]
   (reduce-kv (fn [^XMLOutputFactory factory k v]
