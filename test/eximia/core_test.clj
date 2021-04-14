@@ -53,14 +53,14 @@
 
 (def characters-gen (gen/fmap str/join (gen/vector content-char-gen)))
 
-(def cdata-gen (gen/fmap e/cdata (gen/such-that #(not (.contains ^String % "]]>")) characters-gen)))
+(def cdata-gen (gen/fmap e/->CData (gen/such-that #(not (.contains ^String % "]]>")) characters-gen)))
 
-(def comment-gen (gen/fmap e/comment gen/string-alphanumeric))
+(def comment-gen (gen/fmap e/->Comment gen/string-alphanumeric))
 
 (def pi-gen
   (gen/let [target name-gen
             data (gen/one-of [(gen/return nil) gen/string-alphanumeric])]
-    (e/processing-instruction target data)))
+    (e/->ProcessingInstruction target data)))
 
 (def qname-gen
   (gen/let [local-name name-gen
@@ -74,7 +74,7 @@
   (gen/let [tag qname-gen
             attrs attrs-gen
             content (gen/vector element-gen)]
-    (e/element tag attrs content)))
+    (e/->Element tag attrs content)))
 
 (def element-gen-all
   (element-of-gen (gen/recursive-gen element-of-gen

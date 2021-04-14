@@ -67,19 +67,13 @@
             (write-attrs out attrs)
             (write-content out content))))))
 
-(def element ->Element)
-
 (defrecord CData [chars]
   WriteXML
   (-write [_ out] (.writeCData ^XMLStreamWriter out chars)))
 
-(def cdata ->CData)
-
 (defrecord Comment [chars]
   WriteXML
   (-write [_ out] (.writeComment ^XMLStreamWriter out chars)))
-
-(def comment ->Comment)
 
 (defrecord ProcessingInstruction [target data]
   WriteXML
@@ -87,10 +81,6 @@
     (if data
       (.writeProcessingInstruction ^XMLStreamWriter out target data)
       (.writeProcessingInstruction ^XMLStreamWriter out target))))
-
-(defn processing-instruction
-  ([target] (processing-instruction target nil))
-  ([target data] (ProcessingInstruction. target data)))
 
 (extend-type String
   WriteXML
@@ -167,14 +157,14 @@
                   XMLStreamConstants/CDATA
                   (let [s (.getText input)]
                     (.next input)
-                    (recur (conj! elems (if preserve-cdata (cdata s) s)))) ; OPTIMIZE: branches every time
+                    (recur (conj! elems (if preserve-cdata (->CData s) s)))) ; OPTIMIZE: branches every time
 
                   XMLStreamConstants/PROCESSING_INSTRUCTION
                   (if preserve-pis                          ; OPTIMIZE: branches every time
                     (let [target (.getPITarget input)
                           data (.getPIData input)]
                       (.next input)
-                      (recur (conj! elems (processing-instruction target data))))
+                      (recur (conj! elems (->ProcessingInstruction target data))))
                     (do (.next input)
                         (recur elems)))
 
@@ -182,7 +172,7 @@
                   (if preserve-comments                     ; OPTIMIZE: branches every time
                     (let [s (.getText input)]
                       (.next input)
-                      (recur (conj! elems (comment s))))
+                      (recur (conj! elems (->Comment s))))
                     (do (.next input)
                         (recur elems)))
 
