@@ -6,24 +6,25 @@
             [clojure.string :as str]
             [clojure.walk :refer [postwalk]])
   (:import [javax.xml XMLConstants]
-           [javax.xml.stream XMLInputFactory]))
+           [javax.xml.stream XMLInputFactory]
+           [eximia.core CData]))
 
-(defn coalesce-strs [coll]
+(defn coalesce-strs [string? ->string coll]
   (loop [acc [], coll coll]
     (if (seq coll)
       (let [[strs coll] (split-with string? coll)]
         (if (seq strs)
-          (recur (conj acc (str/join strs)) coll)
+          (recur (conj acc (str/join (map ->string strs))) coll)
           (recur (conj acc (first coll)) (rest coll))))
       acc)))
 
-(defn canonicalize-strs [tree]
+(defn canonicalize-strs [string? ->string  tree]
   (postwalk (fn [tree]
               (cond
                 (and (map? tree) (contains? tree :tag))
                 (update tree :content (comp #(filterv (fn [child] (or (not (string? child)) (seq child)))
                                                       %)
-                                            coalesce-strs))
+                                            #(coalesce-strs string? ->string %)))
 
                 (and (map? tree) (contains? tree :target))
                 (-> tree
@@ -32,6 +33,10 @@
 
                 :else tree))
             tree))
+
+(defn characters? [v] (or (string? v) (instance? CData v)))
+
+(defn characters->string [v] (if (string? v) v (.chars v)))
 
 ;;;; # Generators
 
@@ -48,7 +53,7 @@
 
 (def characters-gen (gen/fmap str/join (gen/vector content-char-gen)))
 
-(def cdata-gen (gen/fmap e/cdata characters-gen))
+(def cdata-gen (gen/fmap e/cdata (gen/such-that #(not (.contains % "]]>")) characters-gen)))
 
 (def comment-gen (gen/fmap e/comment gen/string-alphanumeric))
 
@@ -65,28 +70,50 @@
 
 (def attrs-gen (gen/map qname-gen characters-gen))
 
-(def non-element-content-gen (gen/one-of [characters-gen cdata-gen pi-gen comment-gen]))
-
 (defn element-of-gen [element-gen]
   (gen/let [tag qname-gen
             attrs attrs-gen
             content (gen/vector element-gen)]
     (e/element tag attrs content)))
 
-(def element-gen
-  (element-of-gen (gen/recursive-gen element-of-gen non-element-content-gen)))
+(def element-gen-all
+  (element-of-gen (gen/recursive-gen element-of-gen
+                                     (gen/one-of [characters-gen cdata-gen pi-gen comment-gen]))))
+
+(def element-gen-cdata
+  (element-of-gen (gen/recursive-gen element-of-gen
+                                     (gen/one-of [characters-gen cdata-gen]))))
 
 ;;;; # Tests
 
-(def input-factory
+(defspec write-read
+  50
+  (for-all [el element-gen-cdata]
+    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+          el* (e/read-str xml)]
+      (= (canonicalize-strs characters? characters->string el)
+         (canonicalize-strs characters? characters->string el*)))))
+
+(def noncoalescing-input-factory
   (doto (e/input-factory)
     (.setProperty XMLInputFactory/IS_COALESCING false)))
 
-(defspec write-read
+(defspec write-read-all
   50
-  (for-all [el element-gen]
-           (let [xml (e/write-str el {:xml-version "1.1"})
-                 el* (e/read-str xml
-                                 {:preserve #{:processing-instruction :cdata :comment}}
-                                 input-factory)]
-             (= (canonicalize-strs el) (canonicalize-strs el*)))))
+  (for-all [el element-gen-all]
+    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+          el* (e/read-str xml
+                          {:preserve #{:processing-instruction :cdata :comment}}
+                          noncoalescing-input-factory)]
+      (= (canonicalize-strs string? identity el)
+         (canonicalize-strs string? identity el*)))))
+
+(defspec write-read-cdata
+  50
+  (for-all [el element-gen-cdata]
+    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+          el* (e/read-str xml
+                          {:preserve #{:cdata}}
+                          noncoalescing-input-factory)]
+      (= (canonicalize-strs string? identity el)
+         (canonicalize-strs string? identity el*)))))
