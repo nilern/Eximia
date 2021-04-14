@@ -94,9 +94,7 @@
       (= (canonicalize-strs characters? characters->string el)
          (canonicalize-strs characters? characters->string el*)))))
 
-(def noncoalescing-input-factory
-  (doto (e/input-factory)
-    (.setProperty XMLInputFactory/IS_COALESCING false)))
+(def noncoalescing-input-factory (e/input-factory {}))
 
 (defspec write-read-all
   50

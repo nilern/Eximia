@@ -218,12 +218,29 @@
 
 ;;;; # API
 
-(defn input-factory ^XMLInputFactory []
-  (doto (XMLInputFactory/newFactory)
-    (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false)
-    (.setProperty XMLInputFactory/IS_COALESCING true)))
+(defn input-factory ^XMLInputFactory [opts]
+  (reduce-kv (fn [^XMLInputFactory factory k v]
+               (let [k (if (keyword? k)
+                         (case k
+                           :validating XMLInputFactory/IS_VALIDATING
+                           :namespace-aware XMLInputFactory/IS_NAMESPACE_AWARE
+                           :coalescing XMLInputFactory/IS_COALESCING
+                           :replacing-entity-references XMLInputFactory/IS_REPLACING_ENTITY_REFERENCES
+                           :supporting-external-entities XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES
+                           :support-dtd XMLInputFactory/SUPPORT_DTD
+                           :reporter XMLInputFactory/REPORTER
+                           :resolver XMLInputFactory/RESOLVER
+                           :allocator XMLInputFactory/ALLOCATOR
+                           (throw (ex-info "Unknown XMLInputFactory property" {:property k})))
+                         k)]
+                 (.setProperty factory k v)
+                 factory))
+             (doto (XMLInputFactory/newFactory)
+               ;; Prevent XXE vulnerability by default:
+               (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false))
+             opts))
 
-(def ^:private ^XMLInputFactory default-input-factory (input-factory))
+(def ^:private ^XMLInputFactory default-input-factory (input-factory {:coalescing true}))
 
 (defn read
   ([input] (read input {}))
@@ -239,11 +256,18 @@
    (with-open [input (StringReader. input)]
      (read input opts xml-input-factory))))
 
-(defn output-factory ^XMLOutputFactory []
-  (doto (XMLOutputFactory/newFactory)
-    (.setProperty XMLOutputFactory/IS_REPAIRING_NAMESPACES true)))
+(defn output-factory ^XMLOutputFactory [opts]
+  (reduce-kv (fn [^XMLOutputFactory factory k v]
+               (let [k (if (keyword? k)
+                         (case k
+                           :repairing-namespaces XMLOutputFactory/IS_REPAIRING_NAMESPACES
+                           (throw (ex-info "Unknown XMLOutputFactory property" {:property k})))
+                         k)]
+                 (.setProperty factory k v)
+                 factory))
+             (XMLOutputFactory/newFactory) opts))
 
-(def ^:private ^XMLOutputFactory default-output-factory (output-factory))
+(def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
 
 (defn write
   ([tree out] (write tree out {}))
