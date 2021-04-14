@@ -6,7 +6,6 @@
             [clojure.string :as str]
             [clojure.walk :refer [postwalk]])
   (:import [javax.xml XMLConstants]
-           [javax.xml.stream XMLInputFactory]
            [eximia.core CData]))
 
 (defn coalesce-strs [string? ->string coll]
