@@ -10,13 +10,25 @@
 
 (defn empty-strless [tree]
   (postwalk (fn [tree]
-              (if (and (map? tree) (contains? tree :tag))
+              (cond
+                (and (map? tree) (contains? tree :tag))
                 (update tree :content #(filterv (fn [child] (or (not (string? child)) (seq child)))
                                                 %))
-                tree))
+
+                (and (map? tree) (contains? tree :target))
+                (-> tree
+                    (update :target #(if (= % "") nil %))
+                    (update :data #(if (= % "") nil %)))
+
+                :else tree))
             tree))
 
 ;;;; # Generators
+
+(def name-gen
+  (gen/let [c gen/char-alpha
+            cs gen/string-alphanumeric]
+           (str c cs)))
 
 (def content-char-gen
   (gen/such-that (fn [^Character c] (< (.indexOf "<&" (int c)) 0))
@@ -29,14 +41,9 @@
 (def comment-gen (gen/fmap e/comment gen/string))
 
 (def pi-gen
-  (gen/let [target gen/string
+  (gen/let [target name-gen
             data (gen/one-of [gen/string (gen/return nil)])]
     (e/processing-instruction target data)))
-
-(def name-gen
-  (gen/let [c gen/char-alpha
-            cs gen/string-alphanumeric]
-    (str c cs)))
 
 (def qname-gen
   (gen/let [local-name name-gen
@@ -64,11 +71,12 @@
     (.setProperty XMLInputFactory/IS_COALESCING false)))
 
 (defspec write-read
+  1000
   (for-all [el element-gen]
            (println "---")
            (prn (empty-strless el))
            (let [xml (e/write-str el)
                  _ (prn xml)
-                 el* (e/read-str xml {:preserve #{:cdata}} input-factory)]
-             (prn el*)
-             (= (empty-strless el) el*))))
+                 el* (e/read-str xml {:preserve #{:processing-instruction :cdata}} input-factory)]
+             (prn (empty-strless el*))
+             (= (empty-strless el) (empty-strless el*)))))
