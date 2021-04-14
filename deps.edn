@@ -1,10 +1,10 @@
 {:source-paths ["src"]
 
- :deps {org.clojure/clojure {:mvn/version "1.10.3", :scope "provided"}
-        com.fasterxml.woodstox/woodstox-core {:mvn/version "6.2.5"}}
+ :deps {org.clojure/clojure {:mvn/version "1.10.3", :scope "provided"}}
 
  :aliases {:test {:extra-paths ["test"]
-                  :extra-deps {org.clojure/test.check {:mvn/version "1.1.0"}
+                  :extra-deps {com.fasterxml.woodstox/woodstox-core {:mvn/version "6.2.5"}
+                               org.clojure/test.check {:mvn/version "1.1.0"}
 
                                lambdaisland/kaocha {:mvn/version "1.0.732"}
                                lambdaisland/kaocha-cljs {:mvn/version "0.0-71"}}}
