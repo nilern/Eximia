@@ -3,8 +3,18 @@
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :refer [for-all]]
             [clojure.test.check.clojure-test :refer [defspec]]
-            [clojure.string :as str])
-  (:import [javax.xml XMLConstants]))
+            [clojure.string :as str]
+            [clojure.walk :refer [postwalk]])
+  (:import [javax.xml XMLConstants]
+           [javax.xml.stream XMLInputFactory]))
+
+(defn empty-strless [tree]
+  (postwalk (fn [tree]
+              (if (and (map? tree) (contains? tree :tag))
+                (update tree :content #(filterv (fn [child] (or (not (string? child)) (seq child)))
+                                                %))
+                tree))
+            tree))
 
 ;;;; # Generators
 
@@ -49,6 +59,16 @@
 
 ;;;; # Tests
 
+(def input-factory
+  (doto (e/input-factory)
+    (.setProperty XMLInputFactory/IS_COALESCING false)))
+
 (defspec write-read
-  (for-all [element element-gen]
-    (= element (e/read-str (e/write-str element)))))
+  (for-all [el element-gen]
+           (println "---")
+           (prn (empty-strless el))
+           (let [xml (e/write-str el)
+                 _ (prn xml)
+                 el* (e/read-str xml {:preserve #{:cdata}} input-factory)]
+             (prn el*)
+             (= (empty-strless el) el*))))

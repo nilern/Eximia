@@ -114,7 +114,7 @@
                             [(if (seq? pat) (map eval pat) (eval pat))
                              expr])))))))
 
-(defn- parse-tokens [^XMLStreamReader input]
+(defn- parse-tokens [^XMLStreamReader input {:keys [preserve]}]
   (letfn [(skip-prolog [^XMLStreamReader input]
             (.next input)                                   ; START_DOCUMENT
             (loop []
@@ -154,10 +154,16 @@
               (eval-case (.getEventType input)
                 XMLStreamConstants/START_ELEMENT (recur (conj! elems (parse-element input)))
 
-                (XMLStreamConstants/CHARACTERS XMLStreamConstants/CDATA XMLStreamConstants/ENTITY_REFERENCE)
+                (XMLStreamConstants/CHARACTERS XMLStreamConstants/ENTITY_REFERENCE)
                 (let [s (.getText input)]
                   (.next input)
                   (recur (conj! elems s)))
+
+                XMLStreamConstants/CDATA
+                (let [s (.getText input)]
+                  (.next input)
+                  (recur (conj! elems
+                                (if (contains? preserve :cdata) (cdata s) s)))) ; OPTIMIZE
 
                 (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT XMLStreamConstants/PROCESSING_INSTRUCTION)
                 (do (.next input)
@@ -174,7 +180,7 @@
 
 ;;;; # API
 
-(defn input-factory []
+(defn input-factory ^XMLInputFactory []
   (doto (XMLInputFactory/newFactory)
     (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false)
     (.setProperty XMLInputFactory/IS_COALESCING true)))
@@ -182,18 +188,20 @@
 (def ^:private ^XMLInputFactory default-input-factory (input-factory))
 
 (defn read
-  ([input] (read input default-input-factory))
-  ([input xml-input-factory]
+  ([input] (read input {}))
+  ([input opts] (read input opts default-input-factory))
+  ([input opts xml-input-factory]
    (with-open [input (-stream-reader input xml-input-factory)]
-     (parse-tokens input))))
+     (parse-tokens input opts))))
 
 (defn read-str
-  ([input] (read-str input default-input-factory))
-  ([input xml-input-factory]
+  ([input] (read-str input {}))
+  ([input opts] (read-str input opts default-input-factory))
+  ([input opts xml-input-factory]
    (with-open [input (StringReader. input)]
-     (read input xml-input-factory))))
+     (read input opts xml-input-factory))))
 
-(defn output-factory []
+(defn output-factory ^XMLOutputFactory []
   (doto (XMLOutputFactory/newFactory)
     (.setProperty XMLOutputFactory/IS_REPAIRING_NAMESPACES true)))
 
