@@ -8,12 +8,22 @@
   (:import [javax.xml XMLConstants]
            [javax.xml.stream XMLInputFactory]))
 
-(defn empty-strless [tree]
+(defn coalesce-strs [coll]
+  (loop [acc [], coll coll]
+    (if (seq coll)
+      (let [[strs coll] (split-with string? coll)]
+        (if (seq strs)
+          (recur (conj acc (str/join strs)) coll)
+          (recur (conj acc (first coll)) (rest coll))))
+      acc)))
+
+(defn canonicalize-strs [tree]
   (postwalk (fn [tree]
               (cond
                 (and (map? tree) (contains? tree :tag))
-                (update tree :content #(filterv (fn [child] (or (not (string? child)) (seq child)))
-                                                %))
+                (update tree :content (comp #(filterv (fn [child] (or (not (string? child)) (seq child)))
+                                                      %)
+                                            coalesce-strs))
 
                 (and (map? tree) (contains? tree :target))
                 (-> tree
@@ -71,14 +81,14 @@
     (.setProperty XMLInputFactory/IS_COALESCING false)))
 
 (defspec write-read
-  1000
+  10000
   (for-all [el element-gen]
            (println "---")
-           (prn (empty-strless el))
+           (prn (canonicalize-strs el))
            (let [xml (e/write-str el {:xml-version "1.1"})
                  _ (prn xml)
                  el* (e/read-str xml
                                  {:preserve #{:processing-instruction :cdata :comment}}
                                  input-factory)]
-             (prn (empty-strless el*))
-             (= (empty-strless el) (empty-strless el*)))))
+             (prn (canonicalize-strs el*))
+             (= (canonicalize-strs el) (canonicalize-strs el*)))))
