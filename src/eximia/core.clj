@@ -18,7 +18,7 @@
 
 ;;;; # Output Conversions
 
-(defprotocol ^:private ToStreamWriter
+(defprotocol ToStreamWriter
   (-stream-writer ^XMLStreamWriter [self factory]))
 
 (extend-protocol ToStreamWriter
@@ -30,7 +30,7 @@
 
 ;;;; # Input Conversions
 
-(defprotocol ^:private ToStreamReader
+(defprotocol ToStreamReader
   (-stream-reader ^XMLStreamReader [self factory]))
 
 (extend-protocol ToStreamReader
