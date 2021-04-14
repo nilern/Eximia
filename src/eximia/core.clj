@@ -117,84 +117,87 @@
                              expr])))))))
 
 (defn- parse-tokens [^XMLStreamReader input {:keys [preserve]}]
-  (letfn [(skip-prolog [^XMLStreamReader input]
-            (.next input)                                   ; START_DOCUMENT
-            (loop []
-              (eval-case (.getEventType input)
-                (XMLStreamConstants/DTD
-                  XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
-                (do (.next input)
-                    (recur))
-
-                nil)))
-
-          (skip-epilog [^XMLStreamReader input]
-            (loop []
-              (eval-case (.getEventType input)
-                (XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
-                (do (.next input)
-                    (recur))
-
-                XMLStreamConstants/END_DOCUMENT nil)))
-
-          (parse-element [^XMLStreamReader input]
-            (let [tag (.getName input)
-                  attrs (parse-attrs input)
-                  content (parse-contents input)]
-              (Element. tag attrs content)))
-
-          (parse-attrs [^XMLStreamReader input]
-            (let [attr-count (.getAttributeCount input)]
-              (loop [i 0, attrs (transient {})]
-                (if (< i attr-count)
-                  (recur (inc i) (assoc! attrs (.getAttributeName input i) (.getAttributeValue input i)))
+  (let [preserve-pis (contains? preserve :processing-instruction)
+        preserve-cdata (contains? preserve :cdata)
+        preserve-comments (contains? preserve :comment)]
+    (letfn [(skip-prolog [^XMLStreamReader input]
+              (.next input)                                 ; START_DOCUMENT
+              (loop []
+                (eval-case (.getEventType input)
+                  (XMLStreamConstants/DTD
+                    XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
                   (do (.next input)
-                      (persistent! attrs))))))
+                      (recur))
 
-          (parse-contents [^XMLStreamReader input]
-            (loop [elems (transient [])]
-              (eval-case (.getEventType input)
-                XMLStreamConstants/START_ELEMENT (recur (conj! elems (parse-element input)))
+                  nil)))
 
-                (XMLStreamConstants/CHARACTERS XMLStreamConstants/ENTITY_REFERENCE)
-                (let [s (.getText input)]
-                  (.next input)
-                  (recur (conj! elems s)))
-
-                XMLStreamConstants/CDATA
-                (let [s (.getText input)]
-                  (.next input)
-                  (recur (conj! elems (if (contains? preserve :cdata) (cdata s) s)))) ; OPTIMIZE
-
-                XMLStreamConstants/PROCESSING_INSTRUCTION
-                (if (contains? preserve :processing-instruction) ; OPTIMIZE
-                  (let [target (.getPITarget input)
-                        data (.getPIData input)]
-                    (.next input)
-                    (recur (conj! elems (processing-instruction target data))))
+            (skip-epilog [^XMLStreamReader input]
+              (loop []
+                (eval-case (.getEventType input)
+                  (XMLStreamConstants/COMMENT XMLStreamConstants/SPACE XMLStreamConstants/PROCESSING_INSTRUCTION)
                   (do (.next input)
-                      (recur elems)))
+                      (recur))
 
-                XMLStreamConstants/COMMENT
-                (if (contains? preserve :comment)           ; OPTIMIZE
+                  XMLStreamConstants/END_DOCUMENT nil)))
+
+            (parse-element [^XMLStreamReader input]
+              (let [tag (.getName input)
+                    attrs (parse-attrs input)
+                    content (parse-contents input)]
+                (Element. tag attrs content)))
+
+            (parse-attrs [^XMLStreamReader input]
+              (let [attr-count (.getAttributeCount input)]
+                (loop [i 0, attrs (transient {})]
+                  (if (< i attr-count)
+                    (recur (inc i) (assoc! attrs (.getAttributeName input i) (.getAttributeValue input i)))
+                    (do (.next input)
+                        (persistent! attrs))))))
+
+            (parse-contents [^XMLStreamReader input]
+              (loop [elems (transient [])]
+                (eval-case (.getEventType input)
+                  XMLStreamConstants/START_ELEMENT (recur (conj! elems (parse-element input)))
+
+                  (XMLStreamConstants/CHARACTERS XMLStreamConstants/ENTITY_REFERENCE)
                   (let [s (.getText input)]
                     (.next input)
-                    (recur (conj! elems (comment s))))
+                    (recur (conj! elems s)))
+
+                  XMLStreamConstants/CDATA
+                  (let [s (.getText input)]
+                    (.next input)
+                    (recur (conj! elems (if preserve-cdata (cdata s) s)))) ; OPTIMIZE: branches every time
+
+                  XMLStreamConstants/PROCESSING_INSTRUCTION
+                  (if preserve-pis                          ; OPTIMIZE: branches every time
+                    (let [target (.getPITarget input)
+                          data (.getPIData input)]
+                      (.next input)
+                      (recur (conj! elems (processing-instruction target data))))
+                    (do (.next input)
+                        (recur elems)))
+
+                  XMLStreamConstants/COMMENT
+                  (if preserve-comments                     ; OPTIMIZE: branches every time
+                    (let [s (.getText input)]
+                      (.next input)
+                      (recur (conj! elems (comment s))))
+                    (do (.next input)
+                        (recur elems)))
+
+                  XMLStreamConstants/SPACE
                   (do (.next input)
-                      (recur elems)))
+                      (recur elems))
 
-                XMLStreamConstants/SPACE
-                (do (.next input)
-                    (recur elems))
+                  XMLStreamConstants/END_ELEMENT (do (.next input)
+                                                     (persistent! elems)))))]
 
-                XMLStreamConstants/END_ELEMENT (do (.next input)
-                                                   (persistent! elems)))))]
-
-    (skip-prolog input)
-    (let [v (parse-element input)]
-      (skip-epilog input)
-      (assert (not (.hasNext input)))
-      v)))
+      (skip-prolog input)
+      (let [v (parse-element input)]
+        (skip-epilog input)
+        (assert (not (.hasNext input)))
+        v))))
 
 ;;;; # API
 

@@ -42,7 +42,7 @@
 
 (def pi-gen
   (gen/let [target name-gen
-            data (gen/one-of [gen/string (gen/return nil)])]
+            data (gen/one-of [gen/string-alphanumeric (gen/return nil)])]
     (e/processing-instruction target data)))
 
 (def qname-gen
