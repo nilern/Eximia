@@ -41,27 +41,29 @@
            (str c cs)))
 
 (def content-char-gen
-  (gen/such-that (fn [^Character c] (< (.indexOf "<&" (int c)) 0))
+  (gen/such-that (fn [^Character c]
+                   (let [c (int c)]
+                     (and (>= c 10) (< (.indexOf "<&" c) 0))))
                  gen/char-ascii))
 
 (def characters-gen (gen/fmap str/join (gen/vector content-char-gen)))
 
 (def cdata-gen (gen/fmap e/cdata characters-gen))
 
-(def comment-gen (gen/fmap e/comment gen/string))
+(def comment-gen (gen/fmap e/comment gen/string-alphanumeric))
 
 (def pi-gen
   (gen/let [target name-gen
-            data (gen/one-of [gen/string-alphanumeric (gen/return nil)])]
+            data (gen/one-of [(gen/return nil) gen/string-alphanumeric])]
     (e/processing-instruction target data)))
 
 (def qname-gen
   (gen/let [local-name name-gen
-            namespace-uri (gen/one-of [name-gen (gen/return XMLConstants/NULL_NS_URI)])
-            prefix (gen/one-of [name-gen (gen/return XMLConstants/DEFAULT_NS_PREFIX)])]
+            namespace-uri (gen/one-of [(gen/return XMLConstants/NULL_NS_URI) name-gen])
+            prefix (gen/one-of [(gen/return XMLConstants/DEFAULT_NS_PREFIX) name-gen])]
     (e/qname namespace-uri local-name prefix)))
 
-(def attrs-gen (gen/map qname-gen gen/string))
+(def attrs-gen (gen/map qname-gen characters-gen))
 
 (def non-element-content-gen (gen/one-of [characters-gen cdata-gen pi-gen comment-gen]))
 
@@ -81,14 +83,10 @@
     (.setProperty XMLInputFactory/IS_COALESCING false)))
 
 (defspec write-read
-  10000
+  50
   (for-all [el element-gen]
-           (println "---")
-           (prn (canonicalize-strs el))
            (let [xml (e/write-str el {:xml-version "1.1"})
-                 _ (prn xml)
                  el* (e/read-str xml
                                  {:preserve #{:processing-instruction :cdata :comment}}
                                  input-factory)]
-             (prn (canonicalize-strs el*))
              (= (canonicalize-strs el) (canonicalize-strs el*)))))
