@@ -69,8 +69,7 @@
 
 (defn- write-attrs [out attrs]
   (reduce-kv (fn [^XMLStreamWriter out, ^QName k, v]
-               (.writeAttribute out (.getPrefix k) (.getNamespaceURI k) (.getLocalPart k) v)
-               out)
+               (doto out (.writeAttribute (.getPrefix k) (.getNamespaceURI k) (.getLocalPart k) v)))
              out attrs))
 
 (defn- write-content [out content] (reduce (fn [out child] (-write child out) out) out content))
@@ -233,8 +232,7 @@
                            :allocator XMLInputFactory/ALLOCATOR
                            (throw (ex-info "Unknown XMLInputFactory property" {:property k})))
                          k)]
-                 (.setProperty factory k v)
-                 factory))
+                 (doto factory (.setProperty k v))))
              (doto (XMLInputFactory/newFactory)
                ;; Prevent XXE vulnerability by default:
                (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false))
@@ -263,8 +261,7 @@
                            :repairing-namespaces XMLOutputFactory/IS_REPAIRING_NAMESPACES
                            (throw (ex-info "Unknown XMLOutputFactory property" {:property k})))
                          k)]
-                 (.setProperty factory k v)
-                 factory))
+                 (doto factory (.setProperty k v))))
              (XMLOutputFactory/newFactory) opts))
 
 (def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
