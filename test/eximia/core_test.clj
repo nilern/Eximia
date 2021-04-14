@@ -75,7 +75,7 @@
   (for-all [el element-gen]
            (println "---")
            (prn (empty-strless el))
-           (let [xml (e/write-str el)
+           (let [xml (e/write-str el {:xml-version "1.1"})
                  _ (prn xml)
                  el* (e/read-str xml
                                  {:preserve #{:processing-instruction :cdata :comment}}

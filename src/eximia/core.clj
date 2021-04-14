@@ -96,8 +96,10 @@
   WriteXML
   (-write [s out] (.writeCharacters ^XMLStreamWriter out s)))
 
-(defn- write-document [tree ^XMLStreamWriter out]
-  (.writeStartDocument out)
+(defn- write-document [tree ^XMLStreamWriter out {:keys [xml-version]}]
+  (if xml-version
+    (.writeStartDocument out xml-version)
+    (.writeStartDocument out))
   (-write tree out)
   (.writeEndDocument out))
 
@@ -224,14 +226,16 @@
 (def ^:private ^XMLOutputFactory default-output-factory (output-factory))
 
 (defn write
-  ([tree out] (write tree out default-output-factory))
-  ([tree out xml-output-factory]
+  ([tree out] (write tree out {}))
+  ([tree out opts] (write tree out opts default-output-factory))
+  ([tree out opts xml-output-factory]
    (with-open [out (-stream-writer out xml-output-factory)]
-     (write-document tree out))))
+     (write-document tree out opts))))
 
 (defn write-str
-  ([tree] (write-str tree default-output-factory))
-  ([tree xml-output-factory]
+  ([tree] (write-str tree {}))
+  ([tree opts] (write-str tree opts default-output-factory))
+  ([tree opts xml-output-factory]
    (with-open [out (StringWriter.)]
-     (write tree out xml-output-factory)
+     (write tree out opts xml-output-factory)
      (.toString out))))
