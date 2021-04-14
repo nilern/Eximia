@@ -77,6 +77,8 @@
            (prn (empty-strless el))
            (let [xml (e/write-str el)
                  _ (prn xml)
-                 el* (e/read-str xml {:preserve #{:processing-instruction :cdata}} input-factory)]
+                 el* (e/read-str xml
+                                 {:preserve #{:processing-instruction :cdata :comment}}
+                                 input-factory)]
              (prn (empty-strless el*))
              (= (empty-strless el) (empty-strless el*)))))

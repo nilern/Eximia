@@ -165,7 +165,7 @@
                   (recur (conj! elems (if (contains? preserve :cdata) (cdata s) s)))) ; OPTIMIZE
 
                 XMLStreamConstants/PROCESSING_INSTRUCTION
-                (if (contains? preserve :processing-instruction)             ; OPTIMIZE
+                (if (contains? preserve :processing-instruction) ; OPTIMIZE
                   (let [target (.getPITarget input)
                         data (.getPIData input)]
                     (.next input)
@@ -173,7 +173,15 @@
                   (do (.next input)
                       (recur elems)))
 
-                (XMLStreamConstants/SPACE XMLStreamConstants/COMMENT)
+                XMLStreamConstants/COMMENT
+                (if (contains? preserve :comment)           ; OPTIMIZE
+                  (let [s (.getText input)]
+                    (.next input)
+                    (recur (conj! elems (comment s))))
+                  (do (.next input)
+                      (recur elems)))
+
+                XMLStreamConstants/SPACE
                 (do (.next input)
                     (recur elems))
 
