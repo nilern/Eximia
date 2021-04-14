@@ -65,7 +65,7 @@
 
 (defprotocol WriteXML
   "Emitting an XML fragment"
-  (-write [self out] "Write the XML fragment for `self` into the [javax.xml.stream.XMLStreamWriter]] `out`."))
+  (-write [self out] "Write the XML fragment for `self` into the [[javax.xml.stream.XMLStreamWriter]] `out`."))
 
 (defn- write-attrs [out attrs]
   (reduce-kv (fn [^XMLStreamWriter out, ^QName k, v]
