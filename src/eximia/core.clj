@@ -16,6 +16,12 @@
   ([namespace-uri local-name] (QName. namespace-uri local-name))
   ([namespace-uri local-name prefix] (QName. namespace-uri local-name prefix)))
 
+(defn local-name [^QName qname] (.getLocalPart qname))
+
+(defn ns-uri [^QName qname] (.getNamespaceURI qname))
+
+(defn prefix [^QName qname] (.getPrefix qname))
+
 ;;;; # Output Conversions
 
 (defprotocol ToStreamWriter
