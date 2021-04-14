@@ -36,7 +36,7 @@
 
 (defn characters? [v] (or (string? v) (instance? CData v)))
 
-(defn characters->string [v] (if (string? v) v (.chars v)))
+(defn characters->string [v] (if (string? v) v (.chars ^CData v)))
 
 ;;;; # Generators
 
@@ -53,7 +53,7 @@
 
 (def characters-gen (gen/fmap str/join (gen/vector content-char-gen)))
 
-(def cdata-gen (gen/fmap e/cdata (gen/such-that #(not (.contains % "]]>")) characters-gen)))
+(def cdata-gen (gen/fmap e/cdata (gen/such-that #(not (.contains ^String % "]]>")) characters-gen)))
 
 (def comment-gen (gen/fmap e/comment gen/string-alphanumeric))
 
