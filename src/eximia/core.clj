@@ -287,27 +287,26 @@
 
   The optional `opts` map can have the following keys:
 
-  | Key           | Description                                                                  | Value                                              | Default    |
-  |---------------|------------------------------------------------------------------------------|----------------------------------------------------|------------|
-  | `:tag-fn`     | Function to apply to tag `QName`s                                            | An IFn                                             | `identity` |
-  | `:key-fn`     | Function to apply to attribute key `QName`s                                  | An IFn                                             | `identity` |
-  | `:wrap-cdata` | Return CDATA contents wrapped in [[CData]] instead of just the String.       | A boolean                                          | `false`    |
-  | `:preserve`   | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them. | A subset of `#{:processing-instruction, :comment}` | `#{}`      |
-
-  You can also override the XMLInputFactory with `xml-input-factory`, see [[input-factory]]."
+  | Key                  | Description                                 | Value  | Default    |
+  |----------------------|---------------------------------------------|--------|------------|
+  | `:tag-fn`            | Function to apply to tag `QName`s           | An IFn | `identity` |
+  | `:key-fn`            | Function to apply to attribute key `QName`s | An IFn | `identity` |
+  | `:wrap-cdata`        | Return CDATA contents wrapped in [[CData]] instead of just the String. | boolean | `false` |
+  | `:preserve`          | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them.
+      | A subset of `#{:processing-instruction, :comment}` | `#{}` |
+  | `:xml-input-factory` | The XMLInputFactory to use. See also [[input-factory]].
+      | An XMLInputFactory | A `(input-factory {:coalescing true})` cached internally in Eximia |"
   ([input] (read input {}))
-  ([input opts] (read input opts default-input-factory))
-  ([input opts xml-input-factory]
-   (with-open [input (-stream-reader input xml-input-factory)]
+  ([input opts]
+   (with-open [input (-stream-reader input (get opts :xml-input-factory default-input-factory))]
      (parse-tokens input opts))))
 
 (defn read-str
   "Like [[read]], but with a String as the `input`."
   ([input] (read-str input {}))
-  ([input opts] (read-str input opts default-input-factory))
-  ([input opts xml-input-factory]
+  ([input opts]
    (with-open [input (StringReader. input)]
-     (read input opts xml-input-factory))))
+     (read input opts))))
 
 ;;;; # Writing
 
@@ -336,22 +335,20 @@
 
   The optional `opts` map can have the following keys:
 
-  | Key            | Description             | Value                  | Default   |
-  |----------------|-------------------------|------------------------|-----------|
-  | `:xml-version` | The XML standard to use | `\"1.0\"` or `\"1.1\"` | `\"1.0\"` |
-
-  You can also override the XMLOutputFactory with `xml-output-factory`, see [[output-factory]]."
+  | Key                   | Description             | Value                  | Default   |
+  |-----------------------|-------------------------|------------------------|-----------|
+  | `:xml-version`        | The XML standard to use | `\"1.0\"` or `\"1.1\"` | `\"1.0\"` |
+  | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]].
+      | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
   ([tree out] (write tree out {}))
-  ([tree out opts] (write tree out opts default-output-factory))
-  ([tree out opts xml-output-factory]
-   (with-open [out (-stream-writer out xml-output-factory)]
+  ([tree out opts]
+   (with-open [out (-stream-writer out (get opts :xml-output-factory default-output-factory))]
      (write-document tree out opts))))
 
 (defn write-str
   "Like [[write]], but returns a String instead of writing to a provided destination."
   ([tree] (write-str tree {}))
-  ([tree opts] (write-str tree opts default-output-factory))
-  ([tree opts xml-output-factory]
+  ([tree opts]
    (with-open [out (StringWriter.)]
-     (write tree out opts xml-output-factory)
+     (write tree out opts)
      (.toString out))))
