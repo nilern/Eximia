@@ -1,5 +1,6 @@
 (ns eximia.core-test
   (:require [eximia.core :as e]
+            [clojure.test :refer [deftest is]]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :refer [for-all]]
             [clojure.test.check.clojure-test :refer [defspec]]
@@ -84,6 +85,28 @@
                                      (gen/one-of [characters-gen cdata-gen]))))
 
 ;;;; # Tests
+
+(deftest test-qnames
+  (let [qname (e/qname "foo")]
+    (is (= "foo" (e/local-name qname)))
+    (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
+    (is (= XMLConstants/DEFAULT_NS_PREFIX (e/prefix qname)))
+    (is (= :foo (e/qname->keyword qname)))
+    (is (= :foo (e/qname->unq-keyword qname))))
+
+  (let [qname (e/qname "http://example.com" "foo")]
+    (is (= "foo" (e/local-name qname)))
+    (is (= "http://example.com" (e/ns-uri qname)))
+    (is (= XMLConstants/DEFAULT_NS_PREFIX (e/prefix qname)))
+    (is (= :foo (e/qname->keyword qname)))
+    (is (= :foo (e/qname->unq-keyword qname))))
+
+  (let [qname (e/qname "http://example.com" "foo" "example")]
+    (is (= "foo" (e/local-name qname)))
+    (is (= "http://example.com" (e/ns-uri qname)))
+    (is (= "example" (e/prefix qname)))
+    (is (= :example/foo (e/qname->keyword qname)))
+    (is (= :foo (e/qname->unq-keyword qname)))))
 
 (defspec write-read
   50
