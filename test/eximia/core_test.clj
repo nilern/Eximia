@@ -5,11 +5,13 @@
             [clojure.test.check.properties :refer [for-all]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.string :as str]
-            [clojure.walk :refer [postwalk]])
+            [clojure.walk :refer [postwalk]]
+            [clojure.java.io :as io])
   (:import [javax.xml XMLConstants]
            [eximia.core CData]
            [javax.xml.stream XMLInputFactory XMLOutputFactory]
-           [clojure.lang ExceptionInfo]))
+           [clojure.lang ExceptionInfo]
+           [java.io StringWriter ByteArrayOutputStream]))
 
 (defn coalesce-strs [string? ->string coll]
   (loop [acc [], coll coll]
@@ -172,6 +174,32 @@
 
   (is (thrown-with-msg? ExceptionInfo #"Unknown XMLOutputFactory property"
                         (e/output-factory {:fubar true}))))
+
+(deftest read-smoke-test
+  (let [input-file (io/file "dev-resources/hello.xml")
+        expected (e/->Element (e/qname "greeting") {(e/qname "style") "programmatic"}
+                              ["Hello, world!"])]
+    (is (= expected (e/read (io/input-stream input-file))))
+    (is (= expected (e/read (io/reader input-file))))
+    (is (= expected (e/read-str (slurp input-file))))
+
+    (let [expected (e/->Element :greeting {:style "programmatic"} ["Hello, world!"])
+          opts {:tag-fn e/qname->unq-keyword, :key-fn e/qname->unq-keyword}]
+      (is (= expected (e/read (io/input-stream input-file) opts)))
+      (is (= expected (e/read (io/reader input-file) opts)))
+      (is (= expected (e/read-str (slurp input-file) opts))))))
+
+(deftest write-smoke-test
+  (let [tree (e/->Element (e/qname "greeting") {(e/qname "style") "programmatic"}
+                          ["Hello, world!"])
+        expected (slurp "dev-resources/hello.xml")]
+    (let [w (StringWriter.)]
+      (e/write tree w)
+      (is (= expected (.toString w))))
+    (let [out (ByteArrayOutputStream.)]
+      (e/write tree out)
+      (is (= expected (.toString out))))
+    (is (= expected (e/write-str tree)))))
 
 (defspec write-read
   50

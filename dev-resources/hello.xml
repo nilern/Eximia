@@ -1,2 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<greeting>Hello, world!</greeting>
+<?xml version='1.0' encoding='UTF-8'?><greeting style="programmatic">Hello, world!</greeting>
