@@ -100,7 +100,8 @@
   (for-all [el element-gen-all]
     (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml
-                          {:preserve #{:processing-instruction :cdata :comment}}
+                          {:wrap-cdata true
+                           :preserve #{:processing-instruction :comment}}
                           noncoalescing-input-factory)]
       (= (canonicalize-strs string? identity el)
          (canonicalize-strs string? identity el*)))))
@@ -110,7 +111,7 @@
   (for-all [el element-gen-cdata]
     (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml
-                          {:preserve #{:cdata}}
+                          {:wrap-cdata true}
                           noncoalescing-input-factory)]
       (= (canonicalize-strs string? identity el)
          (canonicalize-strs string? identity el*)))))

@@ -132,9 +132,9 @@
                             [(if (seq? pat) (map eval pat) (eval pat))
                              expr])))))))
 
-(defn- parse-tokens [^XMLStreamReader input {:keys [preserve]}]
-  (let [preserve-pis (contains? preserve :processing-instruction)
-        preserve-cdata (contains? preserve :cdata)
+(defn- parse-tokens [^XMLStreamReader input {:keys [wrap-cdata preserve]}]
+  (let [wrap-cdata (boolean wrap-cdata)
+        preserve-pis (contains? preserve :processing-instruction)
         preserve-comments (contains? preserve :comment)]
     (letfn [(skip-prolog [^XMLStreamReader input]
               (.next input)                                 ; START_DOCUMENT
@@ -183,7 +183,7 @@
                   XMLStreamConstants/CDATA
                   (let [s (.getText input)]
                     (.next input)
-                    (recur (conj! elems (if preserve-cdata (->CData s) s)))) ; OPTIMIZE: branches every time
+                    (recur (conj! elems (if wrap-cdata (->CData s) s)))) ; OPTIMIZE: branches every time
 
                   XMLStreamConstants/PROCESSING_INSTRUCTION
                   (if preserve-pis                          ; OPTIMIZE: branches every time
@@ -241,6 +241,16 @@
 (def ^:private ^XMLInputFactory default-input-factory (input-factory {:coalescing true}))
 
 (defn read
+  "Read XML from `input`, which should be an InputStream or a Reader (or any [[ToStreamReader]]).
+
+  The optional `opts` map can have the following keys:
+
+  | Key           | Description                                                                  | Value                                              | Default |
+  |---------------|------------------------------------------------------------------------------|----------------------------------------------------|---------|
+  | `:wrap-cdata` | Return CDATA contents wrapped in [[CData]] instead of just the String.       | A boolean                                          | `false` |
+  | `:preserve`   | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them. | A subset of `#{:processing-instruction, :comment}` | `#{}`   |
+
+  You can also override the XMLInputFactory with `xml-input-factory`, see [[input-factory]]."
   ([input] (read input {}))
   ([input opts] (read input opts default-input-factory))
   ([input opts xml-input-factory]
@@ -248,6 +258,7 @@
      (parse-tokens input opts))))
 
 (defn read-str
+  "Like [[read]], but with a String as the `input`."
   ([input] (read-str input {}))
   ([input opts] (read-str input opts default-input-factory))
   ([input opts xml-input-factory]
@@ -269,6 +280,15 @@
 (def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
 
 (defn write
+  "Write `tree` as XML to `out`, which should be an OutputStream or a Writer (or any [[ToStreamWriter]]).
+
+  The optional `opts` map can have the following keys:
+
+  | Key            | Description             | Value                  | Default   |
+  |----------------|-------------------------|------------------------|-----------|
+  | `:xml-version` | The XML standard to use | `\"1.0\"` or `\"1.1\"` | `\"1.0\"` |
+
+  You can also override the XMLOutputFactory with `xml-output-factory`, see [[output-factory]]."
   ([tree out] (write tree out {}))
   ([tree out opts] (write tree out opts default-output-factory))
   ([tree out opts xml-output-factory]
@@ -276,6 +296,7 @@
      (write-document tree out opts))))
 
 (defn write-str
+  "Like [[write]], but returns a String instead of writing to a provided destination."
   ([tree] (write-str tree {}))
   ([tree opts] (write-str tree opts default-output-factory))
   ([tree opts xml-output-factory]
