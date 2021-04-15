@@ -159,8 +159,10 @@
                             [(if (seq? pat) (map eval pat) (eval pat))
                              expr])))))))
 
-(defn- parse-tokens [^XMLStreamReader input {:keys [wrap-cdata preserve]}]
-  (let [wrap-cdata (boolean wrap-cdata)
+(defn- parse-tokens [^XMLStreamReader input {:keys [tag-fn key-fn wrap-cdata preserve]}]
+  (let [tag-fn (or tag-fn identity)
+        key-fn (or key-fn identity)
+        wrap-cdata (boolean wrap-cdata)
         preserve-pis (contains? preserve :processing-instruction)
         preserve-comments (contains? preserve :comment)]
     (letfn [(skip-prolog [^XMLStreamReader input]
@@ -184,7 +186,7 @@
                   XMLStreamConstants/END_DOCUMENT nil)))
 
             (parse-element [^XMLStreamReader input]
-              (let [tag (.getName input)
+              (let [tag (tag-fn (.getName input))
                     attrs (parse-attrs input)
                     content (parse-contents input)]
                 (Element. tag attrs content)))
@@ -193,7 +195,7 @@
               (let [attr-count (.getAttributeCount input)]
                 (loop [i 0, attrs (transient {})]
                   (if (< i attr-count)
-                    (recur (inc i) (assoc! attrs (.getAttributeName input i) (.getAttributeValue input i)))
+                    (recur (inc i) (assoc! attrs (key-fn (.getAttributeName input i)) (.getAttributeValue input i)))
                     (do (.next input)
                         (persistent! attrs))))))
 
@@ -285,10 +287,12 @@
 
   The optional `opts` map can have the following keys:
 
-  | Key           | Description                                                                  | Value                                              | Default |
-  |---------------|------------------------------------------------------------------------------|----------------------------------------------------|---------|
-  | `:wrap-cdata` | Return CDATA contents wrapped in [[CData]] instead of just the String.       | A boolean                                          | `false` |
-  | `:preserve`   | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them. | A subset of `#{:processing-instruction, :comment}` | `#{}`   |
+  | Key           | Description                                                                  | Value                                              | Default    |
+  |---------------|------------------------------------------------------------------------------|----------------------------------------------------|------------|
+  | `:tag-fn`     | Function to apply to tag `QName`s                                            | An IFn                                             | `identity` |
+  | `:key-fn`     | Function to apply to attribute key `QName`s                                  | An IFn                                             | `identity` |
+  | `:wrap-cdata` | Return CDATA contents wrapped in [[CData]] instead of just the String.       | A boolean                                          | `false`    |
+  | `:preserve`   | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them. | A subset of `#{:processing-instruction, :comment}` | `#{}`      |
 
   You can also override the XMLInputFactory with `xml-input-factory`, see [[input-factory]]."
   ([input] (read input {}))
