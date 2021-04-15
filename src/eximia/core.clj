@@ -33,28 +33,28 @@
 
 (defn qname
   "Create a QName from a local name and optional namespace URI and prefix."
-  ([local-name] (QName. local-name))
-  ([ns-uri local-name] (QName. ns-uri local-name))
-  ([ns-uri local-name prefix] (QName. ns-uri local-name prefix)))
+  (^QName [local-name] (QName. local-name))
+  (^QName [ns-uri local-name] (QName. ns-uri local-name))
+  (^QName [ns-uri local-name prefix] (QName. ns-uri local-name prefix)))
 
 (defn local-name
   "Get the local name string of a QName, similar to [[clojure.core/name]]."
-  [^QName qname]
+  ^String [^QName qname]
   (.getLocalPart qname))
 
 (defn ns-uri
   "Get the namespace URI string of a QName."
-  [^QName qname]
+  ^String [^QName qname]
   (.getNamespaceURI qname))
 
 (defn prefix
   "Get the namespace prefix string of a QName, similar to [[clojure.core/namespace]]."
-  [^QName qname]
+  ^String [^QName qname]
   (.getPrefix qname))
 
 (defn keyword->qname
   "Convert the keyword `kw` to a QName, with the keyword namespace as the prefix (and `NULL_NS_URI` as the ns-uri)."
-  [kw]
+  ^QName [kw]
   (if-some [prefix (namespace kw)]
     (QName. XMLConstants/NULL_NS_URI (name kw) prefix)
     (QName. (name kw))))
