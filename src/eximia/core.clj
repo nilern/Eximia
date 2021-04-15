@@ -14,6 +14,7 @@
   (:refer-clojure :exclude [read])
   (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamWriter XMLStreamConstants XMLOutputFactory]
            [javax.xml.namespace QName]
+           [javax.xml XMLConstants]
            [java.io Reader Writer InputStream OutputStream StringReader StringWriter]
            [clojure.lang IPersistentMap]))
 
@@ -44,6 +45,20 @@
   "Get the namespace prefix string of a javax.xml.namespace.QName, similar to [[clojure.core/namespace]]."
   [^QName qname]
   (.getPrefix qname))
+
+(defn qname->keyword
+  "Convert the javax.xml.namespace.QName `qname` to a keyword, with the prefix as the keyword namespace."
+  [^QName qname]
+  (let [prefix (.getPrefix qname)
+        local-name (.getLocalPart qname)]
+    (if (= prefix XMLConstants/DEFAULT_NS_PREFIX)
+      (keyword local-name)
+      (keyword prefix local-name))))
+
+(defn qname->unq-keyword
+  "Convert the javax.xml.namespace.QName `qname` to an unqualified keyword."
+  [^QName qname]
+  (keyword (.getLocalPart qname)))
 
 ;;;; # Output Conversions
 
