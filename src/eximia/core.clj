@@ -4,7 +4,7 @@
   Reads and writes a format similar to clojure.xml and data.xml:
 
   * Elements as maps with `:tag`, `:attrs` and `:content` keys
-  * Character data as Strings
+  * Character data as strings
       - By default, adjacent character sections (including CDATA) are joined together to one string when reading.
 
   But tags and attribute names are represented as javax.xml.namespace `QName`s to support XML namespaces.
@@ -172,7 +172,7 @@
      (write-document tree out opts))))
 
 (defn write-str
-  "Like [[write]], but returns a String instead of writing to a provided destination."
+  "Like [[write]], but returns a string instead of writing to a provided destination."
   ([tree] (write-str tree {}))
   ([tree opts]
    (with-open [out (StringWriter.)]
@@ -341,7 +341,7 @@
   |----------------------|---------------------------------------------|--------|------------|
   | `:tag-fn`            | Function to apply to tag `QName`s           | An IFn | `identity` |
   | `:key-fn`            | Function to apply to attribute key `QName`s | An IFn | `identity` |
-  | `:wrap-cdata`        | Return CDATA contents wrapped in [[CData]] instead of just the String. | boolean | `false` |
+  | `:wrap-cdata`        | Return CDATA contents wrapped in [[CData]] instead of just the string. | boolean | `false` |
   | `:preserve`          | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them.
       | A subset of `#{:processing-instruction, :comment}` | `#{}` |
   | `:xml-input-factory` | The XMLInputFactory to use. See also [[input-factory]].
@@ -352,7 +352,7 @@
      (parse-tokens input opts))))
 
 (defn read-str
-  "Like [[read]], but with a String as the `input`."
+  "Like [[read]], but with a string as the `input`."
   ([input] (read-str input {}))
   ([input opts]
    (with-open [input (StringReader. input)]
