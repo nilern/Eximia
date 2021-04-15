@@ -51,7 +51,7 @@
   [^QName qname]
   (let [prefix (.getPrefix qname)
         local-name (.getLocalPart qname)]
-    (if (= prefix XMLConstants/DEFAULT_NS_PREFIX)
+    (if (.equals prefix XMLConstants/DEFAULT_NS_PREFIX)
       (keyword local-name)
       (keyword prefix local-name))))
 
