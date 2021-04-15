@@ -1,8 +1,8 @@
 (ns eximia.core
   (:refer-clojure :exclude [read])
   (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamWriter XMLStreamConstants XMLOutputFactory]
-           [java.io Reader Writer InputStream OutputStream StringReader StringWriter]
            [javax.xml.namespace QName]
+           [java.io Reader Writer InputStream OutputStream StringReader StringWriter]
            [clojure.lang IPersistentMap]))
 
 ;;;; # QName Support
@@ -13,32 +13,32 @@
   (.write out (int \])))
 
 (defn qname
-  "Create a [[javax.xml.namespace.QName]] from a local name and optional namespace URI and prefix."
+  "Create a javax.xml.namespace.QName from a local name and optional namespace URI and prefix."
   ([local-name] (QName. local-name))
   ([ns-uri local-name] (QName. ns-uri local-name))
   ([ns-uri local-name prefix] (QName. ns-uri local-name prefix)))
 
 (defn local-name
-  "Get the local name string of a [[javax.xml.namespace.QName]], similar to [[clojure.core/name]]."
+  "Get the local name string of a javax.xml.namespace.QName, similar to [[clojure.core/name]]."
   [^QName qname]
   (.getLocalPart qname))
 
 (defn ns-uri
-  "Get the namespace URI string of a [[javax.xml.namespace.QName]]."
+  "Get the namespace URI string of a javax.xml.namespace.QName."
   [^QName qname]
   (.getNamespaceURI qname))
 
 (defn prefix
-  "Get the namespace prefix string of a [[javax.xml.namespace.QName]], similar to [[clojure.core/namespace]]."
+  "Get the namespace prefix string of a javax.xml.namespace.QName, similar to [[clojure.core/namespace]]."
   [^QName qname]
   (.getPrefix qname))
 
 ;;;; # Output Conversions
 
 (defprotocol ToStreamWriter
-  "Conversions to [[javax.xml.stream.XMLStreamWriter]]"
+  "Conversions to XMLStreamWriter"
   (-stream-writer ^XMLStreamWriter [self factory]
-    "Wrap `self` into a [[javax.xml.stream.XMLStreamWriter]], using the [[javax.xml.stream XMLOutputFactory]] `factory`."))
+    "Wrap `self` into a XMLStreamWriter, using the XMLOutputFactory `factory`."))
 
 (extend-protocol ToStreamWriter
   Writer
@@ -50,9 +50,9 @@
 ;;;; # Input Conversions
 
 (defprotocol ToStreamReader
-  "Conversions to [[javax.xml.stream.XMLStreamReader]]"
+  "Conversions to XMLStreamReader"
   (-stream-reader ^XMLStreamReader [self factory]
-    "Wrap `self` into a [[javax.xml.stream.XMLStreamReader]], using the [[javax.xml.stream XMLInputFactory]] `factory`."))
+    "Wrap `self` into a XMLStreamReader, using the XMLInputFactory `factory`."))
 
 (extend-protocol ToStreamReader
   Reader
@@ -65,7 +65,7 @@
 
 (defprotocol WriteXML
   "Emitting an XML fragment"
-  (-write [self out] "Write the XML fragment for `self` into the [[javax.xml.stream.XMLStreamWriter]] `out`."))
+  (-write [self out] "Write the XML fragment for `self` into the XMLStreamWriter `out`."))
 
 (defn- write-attrs [out attrs]
   (reduce-kv (fn [^XMLStreamWriter out, ^QName k, v]
