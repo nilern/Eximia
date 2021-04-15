@@ -8,7 +8,8 @@
             [clojure.walk :refer [postwalk]])
   (:import [javax.xml XMLConstants]
            [eximia.core CData]
-           [java.io StringWriter]))
+           [javax.xml.stream XMLInputFactory XMLOutputFactory]
+           [clojure.lang ExceptionInfo]))
 
 (defn coalesce-strs [string? ->string coll]
   (loop [acc [], coll coll]
@@ -130,6 +131,47 @@
     (is (= :example/foo (e/qname->keyword qname)))
     (is (= :foo (e/qname->unq-keyword qname)))
     (is (= (str "#qname[" (.toString qname) "]") (pr-str qname)))))
+
+(deftest test-factories
+  (doseq [props [{XMLInputFactory/IS_VALIDATING false
+                  XMLInputFactory/IS_NAMESPACE_AWARE true
+                  XMLInputFactory/IS_COALESCING true
+                  XMLInputFactory/IS_REPLACING_ENTITY_REFERENCES false
+                  XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false
+                  XMLInputFactory/SUPPORT_DTD false
+                  XMLInputFactory/REPORTER nil
+                  XMLInputFactory/RESOLVER nil
+                  XMLInputFactory/ALLOCATOR nil}
+                 {:validating false
+                  :namespace-aware true
+                  :coalescing true
+                  :replacing-entity-references false
+                  :supporting-external-entities false
+                  :support-dtd false
+                  :reporter nil
+                  :resolver nil
+                  :allocator nil}]
+          :let [inputs (e/input-factory props)]]
+    (is (= false (.getProperty inputs XMLInputFactory/IS_VALIDATING)))
+    (is (= true (.getProperty inputs XMLInputFactory/IS_NAMESPACE_AWARE)))
+    (is (= true (.getProperty inputs XMLInputFactory/IS_COALESCING)))
+    (is (= false (.getProperty inputs XMLInputFactory/IS_REPLACING_ENTITY_REFERENCES)))
+    (is (= false (.getProperty inputs XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES)))
+    (is (= false (.getProperty inputs XMLInputFactory/SUPPORT_DTD)))
+    (is (= nil (.getProperty inputs XMLInputFactory/REPORTER)))
+    (is (= nil (.getProperty inputs XMLInputFactory/RESOLVER)))
+    (is (= nil (.getProperty inputs XMLInputFactory/ALLOCATOR))))
+
+  (is (thrown-with-msg? ExceptionInfo #"Unknown XMLInputFactory property"
+                        (e/input-factory {:fubar true})))
+
+  (doseq [props [{XMLOutputFactory/IS_REPAIRING_NAMESPACES true}
+                 {:repairing-namespaces true}]
+          :let [outputs (e/output-factory props)]]
+    (is (= true (.getProperty outputs XMLOutputFactory/IS_REPAIRING_NAMESPACES))))
+
+  (is (thrown-with-msg? ExceptionInfo #"Unknown XMLOutputFactory property"
+                        (e/output-factory {:fubar true}))))
 
 (defspec write-read
   50
