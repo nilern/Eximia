@@ -60,35 +60,9 @@
   [^QName qname]
   (keyword (.getLocalPart qname)))
 
-;;;; # Output Conversions
-
-(defprotocol ToStreamWriter
-  "Conversions to XMLStreamWriter"
-  (-stream-writer ^XMLStreamWriter [self factory]
-    "Wrap `self` into a XMLStreamWriter, using the XMLOutputFactory `factory`."))
-
-(extend-protocol ToStreamWriter
-  Writer
-  (-stream-writer [self factory] (.createXMLStreamWriter ^XMLOutputFactory factory self))
-
-  OutputStream
-  (-stream-writer [self factory] (.createXMLStreamWriter ^XMLOutputFactory factory self)))
-
-;;;; # Input Conversions
-
-(defprotocol ToStreamReader
-  "Conversions to XMLStreamReader"
-  (-stream-reader ^XMLStreamReader [self factory]
-    "Wrap `self` into a XMLStreamReader, using the XMLInputFactory `factory`."))
-
-(extend-protocol ToStreamReader
-  Reader
-  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
-
-  InputStream
-  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self)))
-
 ;;;; # Writing
+
+;;;; ## Impl
 
 (defprotocol WriteXML
   "Emitting an XML fragment"
@@ -146,7 +120,68 @@
   (-write tree out)
   (.writeEndDocument out))
 
-;;;; # Parsing
+;;;; ## Output Conversions
+
+(defprotocol ToStreamWriter
+  "Conversions to XMLStreamWriter"
+  (-stream-writer ^XMLStreamWriter [self factory]
+    "Wrap `self` into a XMLStreamWriter, using the XMLOutputFactory `factory`."))
+
+(extend-protocol ToStreamWriter
+  Writer
+  (-stream-writer [self factory] (.createXMLStreamWriter ^XMLOutputFactory factory self))
+
+  OutputStream
+  (-stream-writer [self factory] (.createXMLStreamWriter ^XMLOutputFactory factory self)))
+
+;;;; ## Main Writing API
+
+(defn output-factory
+  "Create an XMLOutputFactory. The `opts` map keys and values are the
+  [XMLOutputFactory properties](https://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLOutputFactory.html)
+  but `:repairing-namespaces` can also be used instead of `XMLOutputFactory/IS_REPAIRING_NAMESPACES` or
+  `\"javax.xml.stream.isRepairingNamespaces\"`.
+
+  Note that XMLOutputFactory instances can be very expensive to create but are reusable. So call this as rarely as
+  possible, probably only in the application startup phase."
+  ^XMLOutputFactory [opts]
+  (reduce-kv (fn [^XMLOutputFactory factory k v]
+               (let [k (if (keyword? k)
+                         (case k
+                           :repairing-namespaces XMLOutputFactory/IS_REPAIRING_NAMESPACES
+                           (throw (ex-info "Unknown XMLOutputFactory property" {:property k})))
+                         k)]
+                 (doto factory (.setProperty k v))))
+             (XMLOutputFactory/newFactory) opts))
+
+(def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
+
+(defn write
+  "Write `tree` as XML to `out`, which should be an OutputStream or a Writer (or any [[ToStreamWriter]]).
+
+  The optional `opts` map can have the following keys:
+
+  | Key                   | Description             | Value                  | Default   |
+  |-----------------------|-------------------------|------------------------|-----------|
+  | `:xml-version`        | The XML standard to use | `\"1.0\"` or `\"1.1\"` | `\"1.0\"` |
+  | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]].
+      | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
+  ([tree out] (write tree out {}))
+  ([tree out opts]
+   (with-open [out (-stream-writer out (get opts :xml-output-factory default-output-factory))]
+     (write-document tree out opts))))
+
+(defn write-str
+  "Like [[write]], but returns a String instead of writing to a provided destination."
+  ([tree] (write-str tree {}))
+  ([tree opts]
+   (with-open [out (StringWriter.)]
+     (write tree out opts)
+     (.toString out))))
+
+;;;; # Reading
+
+;;;; ## Impl
 
 (defmacro ^:private eval-case [e & clauses]
   `(case ~e
@@ -244,7 +279,21 @@
         (assert (not (.hasNext input)))
         v))))
 
-;;;; # Reading
+;;;; ## Input Conversions
+
+(defprotocol ToStreamReader
+  "Conversions to XMLStreamReader"
+  (-stream-reader ^XMLStreamReader [self factory]
+    "Wrap `self` into a XMLStreamReader, using the XMLInputFactory `factory`."))
+
+(extend-protocol ToStreamReader
+  Reader
+  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self))
+
+  InputStream
+  (-stream-reader [self factory] (.createXMLStreamReader ^XMLInputFactory factory self)))
+
+;;;; ## Main Reading API
 
 (defn input-factory
   "Create an XMLInputFactory. The `opts` map keys and values are the
@@ -307,48 +356,3 @@
   ([input opts]
    (with-open [input (StringReader. input)]
      (read input opts))))
-
-;;;; # Writing
-
-(defn output-factory
-  "Create an XMLOutputFactory. The `opts` map keys and values are the
-  [XMLOutputFactory properties](https://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLOutputFactory.html)
-  but `:repairing-namespaces` can also be used instead of `XMLOutputFactory/IS_REPAIRING_NAMESPACES` or
-  `\"javax.xml.stream.isRepairingNamespaces\"`.
-
-  Note that XMLOutputFactory instances can be very expensive to create but are reusable. So call this as rarely as
-  possible, probably only in the application startup phase."
-  ^XMLOutputFactory [opts]
-  (reduce-kv (fn [^XMLOutputFactory factory k v]
-               (let [k (if (keyword? k)
-                         (case k
-                           :repairing-namespaces XMLOutputFactory/IS_REPAIRING_NAMESPACES
-                           (throw (ex-info "Unknown XMLOutputFactory property" {:property k})))
-                         k)]
-                 (doto factory (.setProperty k v))))
-             (XMLOutputFactory/newFactory) opts))
-
-(def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
-
-(defn write
-  "Write `tree` as XML to `out`, which should be an OutputStream or a Writer (or any [[ToStreamWriter]]).
-
-  The optional `opts` map can have the following keys:
-
-  | Key                   | Description             | Value                  | Default   |
-  |-----------------------|-------------------------|------------------------|-----------|
-  | `:xml-version`        | The XML standard to use | `\"1.0\"` or `\"1.1\"` | `\"1.0\"` |
-  | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]].
-      | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
-  ([tree out] (write tree out {}))
-  ([tree out opts]
-   (with-open [out (-stream-writer out (get opts :xml-output-factory default-output-factory))]
-     (write-document tree out opts))))
-
-(defn write-str
-  "Like [[write]], but returns a String instead of writing to a provided destination."
-  ([tree] (write-str tree {}))
-  ([tree opts]
-   (with-open [out (StringWriter.)]
-     (write tree out opts)
-     (.toString out))))
