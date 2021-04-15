@@ -114,30 +114,30 @@
 (defspec write-read
   50
   (for-all [el element-gen-cdata]
-           (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml)]
-             (= (canonicalize characters? characters->string el)
-                (canonicalize characters? characters->string el*)))))
+      (= (canonicalize characters? characters->string el)
+         (canonicalize characters? characters->string el*)))))
 
 (def noncoalescing-input-factory (e/input-factory {}))
 
 (defspec write-read-all
   50
   (for-all [el element-gen-all]
-           (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml
                           {:wrap-cdata true
                            :preserve #{:processing-instruction :comment}
                            :xml-input-factory noncoalescing-input-factory})]
-             (= (canonicalize string? identity el)
-                (canonicalize string? identity el*)))))
+      (= (canonicalize string? identity el)
+         (canonicalize string? identity el*)))))
 
 (defspec write-read-cdata
   50
   (for-all [el element-gen-cdata]
-           (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml
                           {:wrap-cdata true
                            :xml-input-factory noncoalescing-input-factory})]
-             (= (canonicalize string? identity el)
-                (canonicalize string? identity el*)))))
+      (= (canonicalize string? identity el)
+         (canonicalize string? identity el*)))))
