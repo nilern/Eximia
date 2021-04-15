@@ -217,7 +217,19 @@
 
 ;;;; # Reading
 
-(defn input-factory ^XMLInputFactory [opts]
+(defn input-factory
+  "Create an XMLInputFactory. The `opts` map keys and values are the
+  [XMLInputFactory properties](https://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLInputFactory.html) but
+  `:validating`, `:namespace-aware`, `:coalescing`, `:replacing-entity-references`, `:supporting-external-entities`,
+  `:support-dtd`, `:reporter` and `:allocator` can be used instead of the XMLInputFactory constants or the raw
+  \"javax.xml.stream.*\" strings.
+
+  `:support-dtd` and `:supporting-external-entities` default to `false` to prevent
+  [XXE attacks](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing).
+
+  Note that XMLInputFactory instances can be very expensive to create but are reusable. So call this as rarely as
+  possible, probably only in the application startup phase."
+  ^XMLInputFactory [opts]
   (reduce-kv (fn [^XMLInputFactory factory k v]
                (let [k (if (keyword? k)
                          (case k
@@ -235,6 +247,7 @@
                  (doto factory (.setProperty k v))))
              (doto (XMLInputFactory/newFactory)
                ;; Prevent XXE vulnerability by default:
+               (.setProperty XMLInputFactory/SUPPORT_DTD false)
                (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false))
              opts))
 
@@ -267,7 +280,15 @@
 
 ;;;; # Writing
 
-(defn output-factory ^XMLOutputFactory [opts]
+(defn output-factory
+  "Create an XMLOutputFactory. The `opts` map keys and values are the
+  [XMLOutputFactory properties](https://docs.oracle.com/javase/8/docs/api/javax/xml/stream/XMLOutputFactory.html)
+  but `:repairing-namespaces` can also be used instead of `XMLOutputFactory/IS_REPAIRING_NAMESPACES` or
+  `\"javax.xml.stream.isRepairingNamespaces\"`.
+
+  Note that XMLOutputFactory instances can be very expensive to create but are reusable. So call this as rarely as
+  possible, probably only in the application startup phase."
+  ^XMLOutputFactory [opts]
   (reduce-kv (fn [^XMLOutputFactory factory k v]
                (let [k (if (keyword? k)
                          (case k
