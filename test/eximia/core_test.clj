@@ -109,6 +109,13 @@
     (is (= "http://example.com" (e/ns-uri qname)))
     (is (= "example" (e/prefix qname)))
     (is (= :example/foo (e/qname->keyword qname)))
+    (is (= :foo (e/qname->unq-keyword qname))))
+
+  (let [qname (e/keyword->qname :example/foo)]
+    (is (= "foo" (e/local-name qname)))
+    (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
+    (is (= "example" (e/prefix qname)))
+    (is (= :example/foo (e/qname->keyword qname)))
     (is (= :foo (e/qname->unq-keyword qname)))))
 
 (defspec write-read

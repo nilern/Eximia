@@ -48,6 +48,13 @@
   [^QName qname]
   (.getPrefix qname))
 
+(defn keyword->qname
+  "Convert the keyword `kw` to a QName, with the keyword namespace as the prefix (and `NULL_NS_URI` as the ns-uri)."
+  [kw]
+  (if-some [prefix (namespace kw)]
+    (QName. XMLConstants/NULL_NS_URI (name kw) prefix)
+    (QName. (name kw))))
+
 (defn qname->keyword
   "Convert the QName `qname` to a keyword, with the prefix as the keyword namespace."
   [^QName qname]
@@ -68,57 +75,59 @@
 
 (defprotocol WriteXML
   "Emitting an XML fragment"
-  (-write [self out] "Write the XML fragment for `self` into the XMLStreamWriter `out`."))
+  (-write [self out opts]
+    "Write the XML fragment for `self` into the XMLStreamWriter `out` and [[write]] options `opts`."))
 
 (def ^:private write-element
-  (letfn [(write-attrs [out attrs]
-            (reduce-kv (fn [^XMLStreamWriter out, ^QName k, v]
-                         (doto out (.writeAttribute (.getPrefix k) (.getNamespaceURI k) (.getLocalPart k) v)))
+  (letfn [(write-attrs [out opts attrs]
+            (reduce-kv (fn [^XMLStreamWriter out, k, v]
+                         (let [^QName k ((get opts :key-fn identity) k)] ; OPTIMIZE: `get`s every time
+                           (doto out (.writeAttribute (.getPrefix k) (.getNamespaceURI k) (.getLocalPart k) v))))
                        out attrs))
-          (write-content [out content] (reduce (fn [out child] (-write child out) out) out content))]
-    (fn [out tag attrs content]
+          (write-content [out opts content] (reduce (fn [out child] (-write child out opts) out) out content))]
+    (fn [out opts tag attrs content]
       (let [^XMLStreamWriter out out
-            ^QName tag tag]
+            ^QName tag ((get opts :tag-fn identity) tag)]   ; OPTIMIZE: `get`s every time
         (if (seq content)
           (do (.writeStartElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
-              (write-attrs out attrs)
-              (write-content out content)
+              (write-attrs out opts attrs)
+              (write-content out opts content)
               (.writeEndElement out))
           (do (.writeEmptyElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
-              (write-attrs out attrs)
-              (write-content out content)))))))
+              (write-attrs out opts attrs)
+              (write-content out opts content)))))))
 
 (defrecord Element [tag attrs content]
   WriteXML
-  (-write [_ out] (write-element out tag attrs content)))
+  (-write [_ out opts] (write-element out opts tag attrs content)))
 
 (defrecord CData [chars]
   WriteXML
-  (-write [_ out] (.writeCData ^XMLStreamWriter out chars)))
+  (-write [_ out _] (.writeCData ^XMLStreamWriter out chars)))
 
 (defrecord Comment [chars]
   WriteXML
-  (-write [_ out] (.writeComment ^XMLStreamWriter out chars)))
+  (-write [_ out _] (.writeComment ^XMLStreamWriter out chars)))
 
 (defrecord ProcessingInstruction [target data]
   WriteXML
-  (-write [_ out]
+  (-write [_ out _]
     (if data
       (.writeProcessingInstruction ^XMLStreamWriter out target data)
       (.writeProcessingInstruction ^XMLStreamWriter out target))))
 
 (extend-protocol WriteXML
   IPersistentMap
-  (-write [{:keys [tag attrs content]} out] (write-element out tag attrs content))
+  (-write [{:keys [tag attrs content]} out opts] (write-element out opts tag attrs content))
 
   String
-  (-write [s out] (.writeCharacters ^XMLStreamWriter out s)))
+  (-write [s out _] (.writeCharacters ^XMLStreamWriter out s)))
 
-(defn- write-document [tree ^XMLStreamWriter out {:keys [xml-version]}]
+(defn- write-document [tree ^XMLStreamWriter out {:keys [xml-version] :as opts}]
   (if xml-version
     (.writeStartDocument out xml-version)
     (.writeStartDocument out))
-  (-write tree out)
+  (-write tree out opts)
   (.writeEndDocument out))
 
 ;;;; ## Output Conversions
@@ -163,9 +172,11 @@
 
   The optional `opts` map can have the following keys:
 
-  | Key                   | Description             | Value                  | Default   |
-  |-----------------------|-------------------------|------------------------|-----------|
-  | `:xml-version`        | The XML standard to use | `\"1.0\"` or `\"1.1\"` | `\"1.0\"` |
+  | Key                   | Description                                 | Value                  | Default    |
+  |-----------------------|---------------------------------------------|------------------------|------------|
+  | `:tag-fn`             | Function to convert tag names into `QName`s | An IFn                 | `identity` |
+  | `:key-fn`             | Function to convert attribute keys `QName`s | An IFn                 | `identity` |
+  | `:xml-version`        | The XML standard to use                     | `\"1.0\"` or `\"1.1\"` | `\"1.0\"`  |
   | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]].
       | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
   ([tree out] (write tree out {}))
