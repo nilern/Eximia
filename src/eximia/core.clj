@@ -97,7 +97,7 @@
               (write-attrs out opts attrs)
               (write-content out opts content)))))))
 
-(defrecord Element [tag attrs content]
+(defrecord ^{:doc "A compact element record (but any map with the keys works also)"} Element [tag attrs content]
   WriteXML
   (-write [_ out opts] (write-element out opts tag attrs content)))
 
