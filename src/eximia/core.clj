@@ -1,5 +1,5 @@
 (ns eximia.core
-  "Fast and small XML processor for Clojure.
+  "A fast and small XML processor for Clojure. With XML namespace support and secure defaults.
 
   Reads and writes a format similar to clojure.xml and data.xml:
 
