@@ -7,7 +7,8 @@
             [clojure.string :as str]
             [clojure.walk :refer [postwalk]])
   (:import [javax.xml XMLConstants]
-           [eximia.core CData]))
+           [eximia.core CData]
+           [java.io StringWriter]))
 
 (defn coalesce-strs [string? ->string coll]
   (loop [acc [], coll coll]
@@ -95,35 +96,40 @@
     (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
     (is (= XMLConstants/DEFAULT_NS_PREFIX (e/prefix qname)))
     (is (= :foo (e/qname->keyword qname)))
-    (is (= :foo (e/qname->unq-keyword qname))))
+    (is (= :foo (e/qname->unq-keyword qname)))
+    (is (= (str "#qname[" (.toString qname) "]") (pr-str qname))))
 
   (let [qname (e/qname "http://example.com" "foo")]
     (is (= "foo" (e/local-name qname)))
     (is (= "http://example.com" (e/ns-uri qname)))
     (is (= XMLConstants/DEFAULT_NS_PREFIX (e/prefix qname)))
     (is (= :foo (e/qname->keyword qname)))
-    (is (= :foo (e/qname->unq-keyword qname))))
+
+    (is (= (str "#qname[" (.toString qname) "]") (pr-str qname))))
 
   (let [qname (e/qname "http://example.com" "foo" "example")]
     (is (= "foo" (e/local-name qname)))
     (is (= "http://example.com" (e/ns-uri qname)))
     (is (= "example" (e/prefix qname)))
     (is (= :example/foo (e/qname->keyword qname)))
-    (is (= :foo (e/qname->unq-keyword qname))))
+    (is (= :foo (e/qname->unq-keyword qname)))
+    (is (= (str "#qname[" (.toString qname) "]") (pr-str qname))))
 
   (let [qname (e/keyword->qname :foo)]
     (is (= "foo" (e/local-name qname)))
     (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
     (is (= XMLConstants/DEFAULT_NS_PREFIX (e/prefix qname)))
     (is (= :foo (e/qname->keyword qname)))
-    (is (= :foo (e/qname->unq-keyword qname))))
+    (is (= :foo (e/qname->unq-keyword qname)))
+    (is (= (str "#qname[" (.toString qname) "]") (pr-str qname))))
 
   (let [qname (e/keyword->qname :example/foo)]
     (is (= "foo" (e/local-name qname)))
     (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
     (is (= "example" (e/prefix qname)))
     (is (= :example/foo (e/qname->keyword qname)))
-    (is (= :foo (e/qname->unq-keyword qname)))))
+    (is (= :foo (e/qname->unq-keyword qname)))
+    (is (= (str "#qname[" (.toString qname) "]") (pr-str qname)))))
 
 (defspec write-read
   50
