@@ -156,7 +156,8 @@
 (def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
 
 (defn write
-  "Write `tree` as XML to `out`, which should be an OutputStream or a Writer (or any [[ToStreamWriter]]).
+  "Write `tree` as XML to `out`, which should be an OutputStream or a Writer (or any [[ToStreamWriter]]). Does not
+  close `out`.
 
   The optional `opts` map can have the following keys:
 
@@ -332,6 +333,7 @@
 
 (defn read
   "Read XML from `input`, which should be an InputStream or a Reader (or any [[ToStreamReader]]).
+  Does not close `input`.
 
   The optional `opts` map can have the following keys:
 
