@@ -63,3 +63,11 @@ The requires required for these examples:
 ; prints <?xml version="1.0" ?><greeting xmlns="" style="programmatic">Hello, world!</greeting>
 ;=> nil
 ```
+
+## Tip: Non-Standard StAX Implementations
+
+Eximia is built on the standard Java StAX cursor API and the JRE ships with an implementation of that. But you might
+want to look at third-party StAX implementations such as [Woodstox](https://github.com/FasterXML/woodstox) which has
+both more features (e.g. `IS_VALIDATING`) and better performance. [Aalto](https://github.com/FasterXML/aalto-xml) should
+be even faster. Although the performance differences might be swamped by all the persistent tree allocations Eximia has
+to do...
