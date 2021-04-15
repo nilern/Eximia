@@ -18,13 +18,15 @@
           (recur (conj acc (first coll)) (rest coll))))
       acc)))
 
-(defn canonicalize-strs [string? ->string  tree]
+(defn canonicalize [string? ->string  tree]
   (postwalk (fn [tree]
               (cond
                 (and (map? tree) (contains? tree :tag))
-                (update tree :content (comp #(filterv (fn [child] (or (not (string? child)) (seq child)))
-                                                      %)
-                                            #(coalesce-strs string? ->string %)))
+                (-> tree
+                    e/map->Element
+                    (update :content (comp #(filterv (fn [child] (or (not (string? child)) (seq child)))
+                                                     %)
+                                                #(coalesce-strs string? ->string %))))
 
                 (and (map? tree) (contains? tree :target))
                 (-> tree
@@ -74,7 +76,8 @@
   (gen/let [tag qname-gen
             attrs attrs-gen
             content (gen/vector element-gen)]
-    (e/->Element tag attrs content)))
+    (gen/one-of [(gen/return (e/->Element tag attrs content))
+                 (gen/return {:tag tag, :attrs attrs, :content content})])))
 
 (def element-gen-all
   (element-of-gen (gen/recursive-gen element-of-gen
@@ -111,30 +114,30 @@
 (defspec write-read
   50
   (for-all [el element-gen-cdata]
-    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+           (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml)]
-      (= (canonicalize-strs characters? characters->string el)
-         (canonicalize-strs characters? characters->string el*)))))
+             (= (canonicalize characters? characters->string el)
+                (canonicalize characters? characters->string el*)))))
 
 (def noncoalescing-input-factory (e/input-factory {}))
 
 (defspec write-read-all
   50
   (for-all [el element-gen-all]
-    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+           (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml
                           {:wrap-cdata true
                            :preserve #{:processing-instruction :comment}
                            :xml-input-factory noncoalescing-input-factory})]
-      (= (canonicalize-strs string? identity el)
-         (canonicalize-strs string? identity el*)))))
+             (= (canonicalize string? identity el)
+                (canonicalize string? identity el*)))))
 
 (defspec write-read-cdata
   50
   (for-all [el element-gen-cdata]
-    (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
+           (let [xml (e/write-str el {:xml-version "1.1"})         ; Enable some extra encoding
           el* (e/read-str xml
                           {:wrap-cdata true
                            :xml-input-factory noncoalescing-input-factory})]
-      (= (canonicalize-strs string? identity el)
-         (canonicalize-strs string? identity el*)))))
+             (= (canonicalize string? identity el)
+                (canonicalize string? identity el*)))))
