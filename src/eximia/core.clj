@@ -68,24 +68,23 @@
   "Emitting an XML fragment"
   (-write [self out] "Write the XML fragment for `self` into the XMLStreamWriter `out`."))
 
-(defn- write-attrs [out attrs]
-  (reduce-kv (fn [^XMLStreamWriter out, ^QName k, v]
-               (doto out (.writeAttribute (.getPrefix k) (.getNamespaceURI k) (.getLocalPart k) v)))
-             out attrs))
-
-(defn- write-content [out content] (reduce (fn [out child] (-write child out) out) out content))
-
-(defn- write-element [out tag attrs content]
-  (let [^XMLStreamWriter out out
-        ^QName tag tag]
-    (if (seq content)
-      (do (.writeStartElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
-          (write-attrs out attrs)
-          (write-content out content)
-          (.writeEndElement out))
-      (do (.writeEmptyElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
-          (write-attrs out attrs)
-          (write-content out content)))))
+(def ^:private write-element
+  (letfn [(write-attrs [out attrs]
+            (reduce-kv (fn [^XMLStreamWriter out, ^QName k, v]
+                         (doto out (.writeAttribute (.getPrefix k) (.getNamespaceURI k) (.getLocalPart k) v)))
+                       out attrs))
+          (write-content [out content] (reduce (fn [out child] (-write child out) out) out content))]
+    (fn [out tag attrs content]
+      (let [^XMLStreamWriter out out
+            ^QName tag tag]
+        (if (seq content)
+          (do (.writeStartElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
+              (write-attrs out attrs)
+              (write-content out content)
+              (.writeEndElement out))
+          (do (.writeEmptyElement out (.getPrefix tag) (.getLocalPart tag) (.getNamespaceURI tag))
+              (write-attrs out attrs)
+              (write-content out content)))))))
 
 (defrecord Element [tag attrs content]
   WriteXML
