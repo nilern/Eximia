@@ -31,7 +31,8 @@ The requires required for these examples:
 > (exml/read-str (slurp "dev-resources/hello.xml"))
 ;=> #eximia.core.Element{:tag #qname[greeting], :attrs {#qname[style] "programmatic"}, :content ["Hello, world!"]}
 
-;; javax.xml.namespace.QName:s are used by default, to support XML namespaces. But keywords can be obtained instead:
+;; javax.xml.namespace.QName:s are used by default, to support XML namespaces.
+;; But keywords can be obtained instead:
 > (with-open [input (io/input-stream "dev-resources/hello.xml")]
     (exml/read input {:tag-fn exml/qname->keyword, :key-fn exml/qname->keyword}))
 ;=> #eximia.core.Element{:tag :greeting, :attrs {:style "programmatic"}, :content ["Hello, world!"]}
@@ -55,8 +56,8 @@ The requires required for these examples:
 > (exml/write-str tree)
 ;=> "<?xml version=\"1.0\" ?><greeting xmlns=\"\" style=\"programmatic\">Hello, world!</greeting>"
 
-;; QName:s are used by default, to support XML namespaces. But keywords can be converted on write. Also while a compact
-;; Element record type is provided, any map with the right keys works:
+;; QName:s are used by default, to support XML namespaces. But keywords can be converted on write.
+;; Also while a compact Element record type is provided, any map with the right keys works:
 > (def tree* {:tag :greeting, :attrs {:style "programmatic"}, :content ["Hello, world!"]})
 > (exml/write tree* System/out {:tag-fn exml/keyword->qname, :key-fn exml/keyword->qname})
 ; prints <?xml version="1.0" ?><greeting xmlns="" style="programmatic">Hello, world!</greeting>
