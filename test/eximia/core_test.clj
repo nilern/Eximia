@@ -111,6 +111,13 @@
     (is (= :example/foo (e/qname->keyword qname)))
     (is (= :foo (e/qname->unq-keyword qname))))
 
+  (let [qname (e/keyword->qname :foo)]
+    (is (= "foo" (e/local-name qname)))
+    (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
+    (is (= XMLConstants/DEFAULT_NS_PREFIX (e/prefix qname)))
+    (is (= :foo (e/qname->keyword qname)))
+    (is (= :foo (e/qname->unq-keyword qname))))
+
   (let [qname (e/keyword->qname :example/foo)]
     (is (= "foo" (e/local-name qname)))
     (is (= XMLConstants/NULL_NS_URI (e/ns-uri qname)))
