@@ -1,4 +1,16 @@
 (ns eximia.core
+  "Fast and small XML processor for Clojure.
+
+  Reads and writes a format similar to clojure.xml and data.xml:
+
+  * Elements as maps with `:tag`, `:attrs` and `:content` keys
+  * Character data as Strings
+      - By default, adjacent character sections (including CDATA) are joined together to one string when reading.
+
+  But tags and attribute names are represented as javax.xml.namespace `QName`s to support XML namespaces.
+
+  CDATA blocks can also be read and written as [[CData]] records, processing instructions as [[ProcessingInstruction]]s
+  and comments as [[Comment]]s."
   (:refer-clojure :exclude [read])
   (:import [javax.xml.stream XMLInputFactory XMLStreamReader XMLStreamWriter XMLStreamConstants XMLOutputFactory]
            [javax.xml.namespace QName]
