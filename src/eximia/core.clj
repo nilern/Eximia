@@ -7,7 +7,9 @@
   * Character data as strings
       - By default, adjacent character sections (including CDATA) are joined together to one string when reading.
 
-  But tags and attribute names are represented as javax.xml.namespace `QName`s to support XML namespaces.
+  But tags and attribute names are represented as
+  [`javax.xml.namespace.QName`](https://docs.oracle.com/javase/8/docs/api/javax/xml/namespace/QName.html)s to support
+  XML namespaces.
 
   CDATA blocks can also be read and written as [[CData]] records, processing instructions as [[ProcessingInstruction]]s
   and comments as [[Comment]]s."
@@ -26,28 +28,28 @@
   (.write out (int \])))
 
 (defn qname
-  "Create a javax.xml.namespace.QName from a local name and optional namespace URI and prefix."
+  "Create a QName from a local name and optional namespace URI and prefix."
   ([local-name] (QName. local-name))
   ([ns-uri local-name] (QName. ns-uri local-name))
   ([ns-uri local-name prefix] (QName. ns-uri local-name prefix)))
 
 (defn local-name
-  "Get the local name string of a javax.xml.namespace.QName, similar to [[clojure.core/name]]."
+  "Get the local name string of a QName, similar to [[clojure.core/name]]."
   [^QName qname]
   (.getLocalPart qname))
 
 (defn ns-uri
-  "Get the namespace URI string of a javax.xml.namespace.QName."
+  "Get the namespace URI string of a QName."
   [^QName qname]
   (.getNamespaceURI qname))
 
 (defn prefix
-  "Get the namespace prefix string of a javax.xml.namespace.QName, similar to [[clojure.core/namespace]]."
+  "Get the namespace prefix string of a QName, similar to [[clojure.core/namespace]]."
   [^QName qname]
   (.getPrefix qname))
 
 (defn qname->keyword
-  "Convert the javax.xml.namespace.QName `qname` to a keyword, with the prefix as the keyword namespace."
+  "Convert the QName `qname` to a keyword, with the prefix as the keyword namespace."
   [^QName qname]
   (let [prefix (.getPrefix qname)
         local-name (.getLocalPart qname)]
@@ -56,7 +58,7 @@
       (keyword prefix local-name))))
 
 (defn qname->unq-keyword
-  "Convert the javax.xml.namespace.QName `qname` to an unqualified keyword."
+  "Convert the QName `qname` to an unqualified keyword."
   [^QName qname]
   (keyword (.getLocalPart qname)))
 
