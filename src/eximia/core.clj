@@ -1,15 +1,19 @@
 (ns eximia.core
   "A fast and small XML processor for Clojure. With XML namespace support and secure defaults.
 
-  Reads and writes a format similar to clojure.xml and data.xml:
+  Reads and writes a format similar but not identical to clojure.xml and data.xml:
 
   * Elements as maps with `:tag`, `:attrs` and `:content` keys
+      - The `:tag` is represented as a
+        [`javax.xml.namespace.QName`](https://docs.oracle.com/javase/8/docs/api/javax/xml/namespace/QName.html)
+        to support XML namespaces.
+      - `:attrs` is a map from `QName`s to strings, to support XML namespaces for the attribute names as well
+      - `:content` is a seq of elements and character data
   * Character data as strings
       - By default, adjacent character sections (including CDATA) are joined together to one string when reading.
 
-  But tags and attribute names are represented as
-  [`javax.xml.namespace.QName`](https://docs.oracle.com/javase/8/docs/api/javax/xml/namespace/QName.html)s to support
-  XML namespaces.
+  There are also options and utility functions to convert QNames to keywords when reading and from keywords to QNames
+  when writing (`:tag-fn` and `:key-fn`, `qname->keyword` etc.).
 
   CDATA blocks can also be read and written as [[CData]] records, processing instructions as [[ProcessingInstruction]]s
   and comments as [[Comment]]s."
