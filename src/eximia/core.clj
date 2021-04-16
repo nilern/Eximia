@@ -13,7 +13,7 @@
       - By default, adjacent character sections (including CDATA) are joined together to one string when reading.
 
   There are also options and utility functions to convert QNames to keywords when reading and from keywords to QNames
-  when writing (`:tag-fn` and `:key-fn`, `qname->keyword` etc.).
+  when writing (`:tag-fn` and `:key-fn`, [[qname->keyword]] etc.).
 
   CDATA blocks can also be read and written as [[CData]] records, processing instructions as [[ProcessingInstruction]]s
   and comments as [[Comment]]s."
@@ -181,8 +181,7 @@
   | `:tag-fn`             | Function to convert tag names into `QName`s | An IFn                 | `identity` |
   | `:key-fn`             | Function to convert attribute keys `QName`s | An IFn                 | `identity` |
   | `:xml-version`        | The XML standard to use                     | `\"1.0\"` or `\"1.1\"` | `\"1.0\"`  |
-  | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]].
-      | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
+  | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]]. | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
   ([tree out] (write tree out {}))
   ([tree out opts]
    (with-open [out (-stream-writer out (get opts :xml-output-factory default-output-factory))]
@@ -359,10 +358,8 @@
   | `:tag-fn`            | Function to apply to tag `QName`s           | An IFn | `identity` |
   | `:key-fn`            | Function to apply to attribute key `QName`s | An IFn | `identity` |
   | `:wrap-cdata`        | Return CDATA contents wrapped in [[CData]] instead of just the string. | boolean | `false` |
-  | `:preserve`          | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them.
-      | A subset of `#{:processing-instruction, :comment}` | `#{}` |
-  | `:xml-input-factory` | The XMLInputFactory to use. See also [[input-factory]].
-      | An XMLInputFactory | A `(input-factory {:coalescing true})` cached internally in Eximia |"
+  | `:preserve`          | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them. | A subset of `#{:processing-instruction, :comment}` | `#{}` |
+  | `:xml-input-factory` | The XMLInputFactory to use. See also [[input-factory]]. | An XMLInputFactory | A `(input-factory {:coalescing true})` cached internally in Eximia |"
   ([input] (read input {}))
   ([input opts]
    (with-open [input (-stream-reader input (get opts :xml-input-factory default-input-factory))]
