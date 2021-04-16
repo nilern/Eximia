@@ -1,5 +1,8 @@
 /target
 .cpcache
 .nrepl-port
+*.jar
+*.asc
+
 /.idea
 *.iml

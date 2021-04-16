@@ -4,7 +4,7 @@
 
   <packaging>jar</packaging>
 
-  <groupId>eximia</groupId>
+  <groupId>com.deepbeginnings</groupId>
   <artifactId>eximia</artifactId>
   <version>0.1.0</version>
   <name>eximia</name>

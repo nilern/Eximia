@@ -12,4 +12,15 @@
            :benchmark {:extra-paths ["bench"]
                        :extra-deps {criterium/criterium {:mvn/version "0.4.6"}
 
-                                    org.clojure/data.xml {:mvn/version "0.0.8"}}}}}
+                                    org.clojure/data.xml {:mvn/version "0.0.8"}}}
+
+           :pack {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
+                                                :sha "e518d9b2b70f4292c9988d2792b8667d88a6f4df"}}
+                  :main-opts ["-m" "mach.pack.alpha.skinny" "--no-libs"
+                              "--project-path" "eximia.jar"]}
+
+           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
+                    :exec-fn deps-deploy.deps-deploy/deploy
+                    :exec-args {:installer :remote
+                                :sign-releases? true
+                                :artifact "eximia.jar"}}}}
