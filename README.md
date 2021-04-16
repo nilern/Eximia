@@ -1,5 +1,7 @@
 # Eximia
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.deepbeginnings/eximia.svg)](https://clojars.org/com.deepbeginnings/eximia)
+[![cljdoc badge](https://cljdoc.org/badge/com.deepbeginnings/eximia)](https://cljdoc.org/d/com.deepbeginnings/eximia/CURRENT)
 [![Build Status](https://img.shields.io/github/workflow/status/nilern/eximia/Run%20tests.svg)](https://github.com/nilern/eximia/actions)
 
 > *Eximia Cum Laude Approbatur* or just **E** is the second highest grade in the Finnish Matriculation Exam.
