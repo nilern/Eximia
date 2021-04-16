@@ -7,6 +7,15 @@ A fast and small XML processor for Clojure. With XML namespace support and secur
 > *Eximia Cum Laude Approbatur* or just **E** is the second highest grade in the Finnish Matriculation Exam.
 > It was split off from the highest *Laudatur* grade [in 1996](https://en.wikipedia.org/wiki/XML#History).
 
+## Fast
+
+* About 4x faster than `data.xml` (0.0.8) or `clojure.xml` (Clojure 1.10.3) on read
+* About 3-4x faster than `data.xml` and about 7x faster than `clojure.xml` on write
+
+## Small
+
+One 300 SLOC namespace.
+
 ## Basic Usage
 
 The requires required for these examples:
