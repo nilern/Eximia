@@ -10,35 +10,69 @@
 
 ;;;; # Reading
 
+(defn force-element [element]
+  (:tag element)
+  (reduce-kv (fn [_ _ _]) nil (:attrs element))
+  (reduce (fn [_ child] (when (map? child) (force-element child) nil))
+          nil (:content element)))
+
 ;;;; ## InputStream
 
 (defn benchmark-inputstream [bytes]
+  ;; hello 53,978658 µs
+  ;; 1 200,808995 µs
+  ;; 10 1,325869 ms
+  ;; 100 13,003318 ms
   (println "### clojure.xml:\n")
-  (cc/quick-bench (clojure.xml/parse (ByteArrayInputStream. bytes)))
+  (cc/quick-bench (force-element (clojure.xml/parse (ByteArrayInputStream. bytes))))
 
+  ;; hello 34,907768 µs
+  ;; 1 181,402163 µs
+  ;; 10 1,361594 ms
+  ;; 100 13,660472 ms
   (println "\n### data.xml:\n")
-  (cc/quick-bench (clojure.data.xml/parse (ByteArrayInputStream. bytes)))
+  (cc/quick-bench (force-element (clojure.data.xml/parse (ByteArrayInputStream. bytes))))
 
+  ;; hello 8,644655 µs
+  ;; 1 45,906206 µs
+  ;; 10 316,654672 µs
+  ;; 100 3,488258 ms
   (println "\n### eximia:\n")
-  (cc/quick-bench (e/read (ByteArrayInputStream. bytes))))
+  (cc/quick-bench (force-element (e/read (ByteArrayInputStream. bytes)))))
 
 ;;;; ## Reader
 
 (defn benchmark-reader [str]
+  ;; hello 34,631649 µs
+  ;; 1 188,078522 µs
+  ;; 10 1,343172 ms
+  ;; 100 12,981706 ms
   (println "### data.xml:\n")
-  (cc/quick-bench (clojure.data.xml/parse (StringReader. str)))
+  (cc/quick-bench (force-element (clojure.data.xml/parse (StringReader. str))))
 
+  ;; hello 7,976649 µs
+  ;; 1 45,023703 µs
+  ;; 10 301,268301 µs
+  ;; 100 3,311600 ms
   (println "\n### eximia:\n")
-  (cc/quick-bench (e/read (StringReader. str))))
+  (cc/quick-bench (force-element (e/read (StringReader. str)))))
 
 ;;;; ## String
 
 (defn benchmark-from-str [str]
+  ;; hello 34,331790 µs
+  ;; 1 190,327077 µs
+  ;; 10 1,371496 ms
+  ;; 100 12,970199 ms
   (println "### data.xml:\n")
-  (cc/quick-bench (clojure.data.xml/parse-str str))
+  (cc/quick-bench (force-element (clojure.data.xml/parse-str str)))
 
+  ;; hello 7,851830 µs
+  ;; 1 45,383464 µs
+  ;; 10 301,294079 µs
+  ;; 100 3,279423 ms
   (println "\n### eximia:\n")
-  (cc/quick-bench (e/read-str str)))
+  (cc/quick-bench (force-element (e/read-str str))))
 
 ;;;; ## Run 'Em
 
