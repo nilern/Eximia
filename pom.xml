@@ -6,14 +6,14 @@
 
   <groupId>com.deepbeginnings</groupId>
   <artifactId>eximia</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
   <name>eximia</name>
 
   <scm>
     <url>https://github.com/nilern/Eximia</url>
     <connection>scm:git:git://github.com/nilern/Eximia.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/nilern/Eximia.git</developerConnection>
-    <tag>0.1.2</tag>
+    <tag>0.1.3</tag>
   </scm>
 
   <dependencies>

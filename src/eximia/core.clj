@@ -168,9 +168,7 @@
                  (doto factory (.setProperty k v))))
              (XMLOutputFactory/newFactory) opts))
 
-(def ^:private ^XMLOutputFactory default-output-factory (output-factory {:repairing-namespaces true}))
-
-(defn write
+(def ^{:arglists '([tree out] [tree out opts])} write
   "Write `tree` as XML to `out`, which should be an OutputStream or a Writer (or any [[ToStreamWriter]]). Does not
   close `out`.
 
@@ -182,10 +180,13 @@
   | `:key-fn`             | Function to convert attribute keys `QName`s | An IFn                 | `identity` |
   | `:xml-version`        | The XML standard to use                     | `\"1.0\"` or `\"1.1\"` | `\"1.0\"`  |
   | `:xml-output-factory` | The XMLOutputFactory to use. See also [[output-factory]]. | An XMLOutputFactory | A `(output-factory {:repairing-namespaces true})` cached internally in Eximia |"
-  ([tree out] (write tree out {}))
-  ([tree out opts]
-   (with-open [out (-stream-writer out (get opts :xml-output-factory default-output-factory))]
-     (write-document tree out opts))))
+  (let [default-output-factory (delay (output-factory {:repairing-namespaces true}))]
+    (fn
+      ([tree out] (write tree out {}))
+      ([tree out opts]
+       (with-open [out (-stream-writer out (or (get opts :xml-output-factory)
+                                               @default-output-factory))]
+         (write-document tree out opts))))))
 
 (defn write-str
   "Like [[write]], but returns a string instead of writing to a provided destination."
@@ -345,9 +346,7 @@
                (.setProperty XMLInputFactory/IS_SUPPORTING_EXTERNAL_ENTITIES false))
              opts))
 
-(def ^:private ^XMLInputFactory default-input-factory (input-factory {:coalescing true}))
-
-(defn read
+(def ^{:arglists '([input] [input opts])} read
   "Read XML from `input`, which should be an InputStream or a Reader (or any [[ToStreamReader]]).
   Does not close `input`.
 
@@ -360,10 +359,13 @@
   | `:wrap-cdata`        | Return CDATA contents wrapped in [[CData]] instead of just the string. | boolean | `false` |
   | `:preserve`          | Return [[ProcessingInstruction]]s and [[Comment]]s instead of skipping them. | A subset of `#{:processing-instruction, :comment}` | `#{}` |
   | `:xml-input-factory` | The XMLInputFactory to use. See also [[input-factory]]. | An XMLInputFactory | A `(input-factory {:coalescing true})` cached internally in Eximia |"
-  ([input] (read input {}))
-  ([input opts]
-   (with-open [input (-stream-reader input (get opts :xml-input-factory default-input-factory))]
-     (parse-tokens input opts))))
+  (let [default-input-factory (delay (input-factory {:coalescing true}))]
+    (fn
+      ([input] (read input {}))
+      ([input opts]
+       (with-open [input (-stream-reader input (or (get opts :xml-input-factory)
+                                                   @default-input-factory))]
+         (parse-tokens input opts))))))
 
 (defn read-str
   "Like [[read]], but with a string as the `input`."
@@ -371,3 +373,4 @@
   ([input opts]
    (with-open [input (StringReader. input)]
      (read input opts))))
+
